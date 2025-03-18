@@ -3,8 +3,10 @@ import express, { NextFunction, Request, Response } from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import path from "path";
-import metadataRoutes from "./routes/metadata";
 import { logRequest } from "./lib/utils";
+import metadataRoutes from "./routes/metadata";
+import authRoutes from "./routes/auth";
+import usersRoutes from "./routes/users";
 
 // routes
 
@@ -38,6 +40,8 @@ app.get("/api/test", (req: Request, res: Response) => {
 });
 
 app.use("/api/metadata", metadataRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/users", usersRoutes);
 
 // app.get("*", (req:Request, res:Response)=>{
 //     res.sendFile(path.join(__dirname, "../../frontend/dist/index.html"))

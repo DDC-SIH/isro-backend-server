@@ -2,9 +2,9 @@ import express, { Request, Response } from "express";
 import Product from "../models/ProductModel";
 import COG from "../models/CogModel";
 
-const router = express.Router();
+const metadataRouter = express.Router();
 
-router.post("/test-add", async (req: Request, res: Response) => {
+metadataRouter.post("/test-add", async (req: Request, res: Response) => {
   try {
     const product = new Product(req.body);
     product.save();
@@ -15,7 +15,7 @@ router.post("/test-add", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/save", async (req: Request, res: Response) => {
+metadataRouter.post("/save", async (req: Request, res: Response) => {
   try {
     const {
       prodcutId,
@@ -63,17 +63,15 @@ router.post("/save", async (req: Request, res: Response) => {
     });
     newCog.save();
 
-    res
-      .status(200)
-      .send({
-        message: "metadata saved successful",
-        product: newProduct,
-        cog: newCog,
-      });
+    res.status(200).send({
+      message: "metadata saved successful",
+      product: newProduct,
+      cog: newCog,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).send("Something is wrong");
   }
 });
 
-export default router;
+export default metadataRouter;
