@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface ProductType extends Document {
-  prodcutId: string;
+  productId: string;
   name: string;
   description?: string;
   satellite?: string;
@@ -13,16 +13,15 @@ export interface ProductType extends Document {
 }
 
 const ProductSchema: Schema<ProductType> = new Schema({
-  prodcutId: { type: String, required: true },
+  productId: { type: String, required: true },
   name: { type: String, required: true },
   description: { type: String, required: false },
   satellite: { type: String, required: false },
   dataStatus: { type: Boolean, required: true, default: true },
-  aquisition_datetime: { type: String, required: true },
+  aquisition_datetime: { type: String, required: false },
   processingLevel: { type: String, required: true },
-  version: { type: String, required: true },
-  revision: { type: String, required: true },
-
+  version: { type: String, required: false },
+  revision: { type: String, required: false },
 });
 
 export default mongoose.model<ProductType>("Product", ProductSchema);

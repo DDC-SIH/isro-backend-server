@@ -16,9 +16,6 @@ mongoose
   .connect(MONGO_URI)
   .then(async () => {
     console.log("Db connected");
-
-    // const db = mongoose.connection.db
-    // await db.createCollection("users").catch(()=>{})
   })
   .catch((err) => console.error("mongodb connection error: ", err));
 
@@ -34,11 +31,11 @@ app.use(logRequest);
 
 // app.use(express.static(path.join(__dirname,"../../frontend/dist")))
 
-// routes
 app.get("/api/test", (req: Request, res: Response) => {
   res.json({ status: 200, message: "working" });
 });
 
+// routes
 app.use("/api/metadata", metadataRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/users", usersRoutes);

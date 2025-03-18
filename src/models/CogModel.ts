@@ -7,7 +7,7 @@ export interface CogType extends Document {
   coverage?: CoverageType;
   filepath: string;
   coordinateSystem: any;
-  size: [number];
+  size: { width: number; height: number };
   cornerCoords?: CornerCoords;
   bands: [BandType];
   product: Types.ObjectId;
@@ -15,10 +15,10 @@ export interface CogType extends Document {
 
 const CogSchema: Schema<CogType> = new Schema({
   filename: { type: String, required: true },
-  aquisition_datetime: { type: String, required: true },
+  aquisition_datetime: { type: String, required: false },
   coverage: { type: Schema.Types.Mixed, required: false },
   filepath: { type: String, required: true },
-  size: { type: [Number], required: false },
+  size: { type: Schema.Types.Mixed, required: false },
   cornerCoords: { type: Schema.Types.Mixed, required: false },
   bands: { type: Schema.Types.Mixed, required: true },
   product: { type: Schema.Types.ObjectId, ref: "Product" },
