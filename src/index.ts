@@ -1,8 +1,10 @@
 import cookieParser from "cookie-parser";
-import express, { Request, Response } from "express";
+import express, { NextFunction, Request, Response } from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import path from "path";
+import metadataRoutes from "./routes/metadata";
+import { logRequest } from "./lib/utils";
 
 // routes
 
@@ -26,6 +28,7 @@ const PORT = process.env.PORT || 7000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
+app.use(logRequest);
 
 // app.use(express.static(path.join(__dirname,"../../frontend/dist")))
 
@@ -34,7 +37,7 @@ app.get("/api/test", (req: Request, res: Response) => {
   res.json({ status: 200, message: "working" });
 });
 
-// app.use("/api/auth", authRoutes)
+app.use("/api/metadata", metadataRoutes);
 
 // app.get("*", (req:Request, res:Response)=>{
 //     res.sendFile(path.join(__dirname, "../../frontend/dist/index.html"))

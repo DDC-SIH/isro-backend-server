@@ -1,0 +1,77 @@
+
+// request.body 
+{
+    // needful for the prodcut schema
+  "prodcutId": "3RIMG_12MAR2025_0945_L1B_V01R00",
+  "name": "3RIMG_12MAR2025_0945_L1B_V01R00.h5",
+  "description": "description",
+  "satellite": "INSAT3R",
+  "aquisition_datetime":"2025-03-12T09:45:18.680Z",
+  "processingLevel":"L1B",
+  "version":"01",
+  "revision":"00",
+
+
+// needful for the cog schema
+  "filename":"3RIMG_12MAR2025_0945_L1B_V01R00.cog.tif",
+  "filepath":"/COG/3RIMG/2025/03/12/",
+  "coverage": {
+    "lat1": 44.54,
+    "lat2": 44.54,
+    "lon1": 44.54,
+    "lon2": 44.54
+  },
+  "coordinateSystem":"any",
+  "size":[
+    4471,
+    4461
+  ],
+  "cornerCoords":{
+    "upperLeft":[
+      -7.2994768,
+      81.0921176
+    ],
+    "lowerLeft":[
+      -7.2994768,
+      -81.1098424
+    ],
+    "lowerRight":[
+      155.2660832,
+      -81.1098424
+    ],
+    "upperRight":[
+      155.2660832,
+      81.0921176
+    ],
+    "center":[
+      73.9833032,
+      -0.0088624
+    ]
+  },
+  "bands":[{
+    "bandId": 1,
+    "type": "UInt16",
+    "colorInterpretation": "Gray",
+    "min":21.0,
+    "max":1023.0,
+    "minimum":21.0,
+    "maximum":1023.0,
+    "mean":119.252,
+    "stdDev":73.174,
+    "noDataValue":1023.0
+  },
+  {
+    "bandId": 2,
+    "type":"UInt16",
+    "colorInterpretation":"Undefined",
+    "min":1.0,
+    "max":1023.0,
+    "minimum":1.0,
+    "maximum":1023.0,
+    "mean":136.093,
+    "stdDev":114.139,
+    "noDataValue":1023.0
+  }
+]
+
+}
