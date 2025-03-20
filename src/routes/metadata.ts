@@ -238,4 +238,30 @@ metadataRouter.get("/cog/last", async (req: Request, res: Response) => {
   }
 });
 
+metadataRouter.get("/product/last", async (req: Request, res: Response) => {
+  try {
+    const { timestamp, count } = req.query;
+
+    const limit = count ? parseInt(count as string, 10) : DEFAULT_FRAME_COUNT;
+
+    if (!VALID_FRAME_COUNTS.includes(limit)) {
+      return res
+        .status(400)
+        .json({ message: "invalid frame count, not allowed" });
+    }
+
+    const query = timestamp
+      ? { aquisition_datetime: { $lte: new Date(timestamp as string).getTime() } }
+      : {};
+
+    const cogs = await ProductModel.find(query)
+      .sort({ aquisition_datetime: -1 })
+      .limit(limit);
+    res.status(200).json(cogs);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Something is wrong");
+  }
+});
+
 export default metadataRouter;
