@@ -9,6 +9,7 @@ export interface ProductType extends Document {
   processingLevel: string;
   version: string;
   revision: string;
+  resolution?: string;
 }
 
 const ProductSchema: Schema<ProductType> = new Schema(
@@ -25,6 +26,7 @@ const ProductSchema: Schema<ProductType> = new Schema(
     processingLevel: { type: String, required: true },
     version: { type: String, required: false },
     revision: { type: String, required: false },
+    resolution: { type: String, required: false },
   },
   { timestamps: true }
 );

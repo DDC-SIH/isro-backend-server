@@ -14,6 +14,7 @@ export interface CogType extends Document {
   processingLevel: string;
   version: string;
   revision: string;
+  resolution?: string;
 }
 
 const CogSchema: Schema<CogType> = new Schema(
@@ -29,6 +30,7 @@ const CogSchema: Schema<CogType> = new Schema(
     processingLevel: { type: String, required: true },
     version: { type: String, required: false },
     revision: { type: String, required: false },
+    resolution: { type: String, required: false },
   },
   { timestamps: true }
 );

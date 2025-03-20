@@ -3,7 +3,7 @@ import Product from "../models/ProductModel";
 import COG from "../models/CogModel";
 import ProductModel from "../models/ProductModel";
 import CogModel from "../models/CogModel";
-import { VALID_FRAME_COUNTS } from "../consts";
+import { DEFAULT_FRAME_COUNT, VALID_FRAME_COUNTS } from "../consts";
 import SatelliteModel, { SatelliteType } from "../models/SatelliteModel";
 import {
   convertFromTimestamp,
@@ -179,8 +179,9 @@ metadataRouter.get("/product/range", async (req: Request, res: Response) => {
       return res.status(400).json({ message: "start and end time required" });
     }
 
-    const startTimestamp = new Date(start as string);
-    const endTimestamp = new Date(end as string);
+    const startTimestamp = new Date(start as string).getTime();
+    const endTimestamp = new Date(end as string).getTime();
+    console.log({ startTimestamp, endTimestamp });
     const products = await ProductModel.find({
       aquisition_datetime: { $gte: startTimestamp, $lte: endTimestamp },
     });
@@ -198,8 +199,8 @@ metadataRouter.get("/cog/range", async (req: Request, res: Response) => {
       return res.status(400).json({ message: "start adn end time required" });
     }
 
-    const startDate = new Date(start as string);
-    const endDate = new Date(end as string);
+    const startDate = new Date(start as string).getTime();
+    const endDate = new Date(end as string).getTime();
 
     const cogs = await CogModel.find({
       aquisition_datetime: { $gte: startDate, $lte: endDate },
@@ -215,7 +216,7 @@ metadataRouter.get("/cog/last", async (req: Request, res: Response) => {
   try {
     const { timestamp, count } = req.query;
 
-    const limit = count ? parseInt(count as string, 10) : VALID_FRAME_COUNTS[0];
+    const limit = count ? parseInt(count as string, 10) : DEFAULT_FRAME_COUNT;
 
     if (!VALID_FRAME_COUNTS.includes(limit)) {
       return res
@@ -224,7 +225,7 @@ metadataRouter.get("/cog/last", async (req: Request, res: Response) => {
     }
 
     const query = timestamp
-      ? { aquisition_datetime: { $lte: new Date(timestamp as string) } }
+      ? { aquisition_datetime: { $lte: new Date(timestamp as string).getTime() } }
       : {};
 
     const cogs = await CogModel.find(query)

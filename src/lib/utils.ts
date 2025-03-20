@@ -35,7 +35,6 @@ export function convertToTimestamp(datestring: string) {
   let mins = parseInt(datestring.substring(10, 12));
 
   let date = new Date(year, mon, day, hour, mins);
-  console.log(date);
 
   return date.getTime();
 }
@@ -47,13 +46,6 @@ export function convertFromTimestamp(ts: number) {
   let year = String(d.getFullYear());
   let hours = String(d.getHours()).padStart(2, "0");
   let mins = String(d.getMinutes()).padStart(2, "0");
-  console.log({
-    d,
-    day,
-    mon,
-    year,
-    hours,
-    mins,
-  });
+
   return `${day}${mon}${year}${hours}${mins}`;
 }

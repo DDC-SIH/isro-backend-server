@@ -3,7 +3,7 @@ import express, { NextFunction, Request, Response } from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import path from "path";
-import { logRequest } from "./lib/utils";
+import { convertToTimestamp, logRequest } from "./lib/utils";
 import metadataRoutes from "./routes/metadata";
 import authRoutes from "./routes/auth";
 import usersRoutes from "./routes/users";
