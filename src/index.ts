@@ -7,6 +7,7 @@ import { logRequest } from "./lib/utils";
 import metadataRoutes from "./routes/metadata";
 import authRoutes from "./routes/auth";
 import usersRoutes from "./routes/users";
+import satelliteRouter from "./routes/satellite";
 
 // routes
 
@@ -39,6 +40,7 @@ app.get("/api/test", (req: Request, res: Response) => {
 app.use("/api/metadata", metadataRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/users", usersRoutes);
+app.use("/api/satellite", satelliteRouter);
 
 // app.get("*", (req:Request, res:Response)=>{
 //     res.sendFile(path.join(__dirname, "../../frontend/dist/index.html"))

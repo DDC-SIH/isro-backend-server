@@ -1,0 +1,91 @@
+{
+    "productId": "3RIMG_12MAR2025_0945_L1B_V01R00.cog.tif",
+    "name": "3RIMG_12MAR2025_0945_L1B_V01R00",
+    "description": "3RIMG_12MAR2025_0945_L1B_V01R00",
+    "satellite": "3RINSAT__12MAR2025_0945_L1B_V01R00.cog.tif",
+    "processingLevel": "L1B",
+    "filename": "3RIMG_12MAR2025_0945_L1B_V01R00",
+    "filepath": "/usr/local/code/cog-testing/raw_L1C_cog/metadata-extractor/final_dir",
+    "coverage": {
+      "lat1": -81.10984243419348,
+      "lat2": 81.09211756580653,
+      "lon1": -7.299476768505016,
+      "lon2": 155.26608323149497
+    },
+    "coordinateSystem": "GEOGCS['WGS 84',DATUM['World Geodetic System 1984',SPHEROID['WGS 84',6378137,298.257223563]],PRIMEM['Greenwich',0],UNIT['degree',0.0174532925199433,AUTHORITY['EPSG','9122']],AXIS['Latitude',NORTH],AXIS['Longitude',EAST]]",
+    "size": { "width": 4471, "height": 4461 },
+    "bands": [
+      {
+        "bandId": 1,
+        "data_type": "uint16",
+        "color_interpretation": "gray",
+        "min": 21,
+        "max": 1023,
+        "minimum": 21,
+        "maximum": 1023,
+        "mean": 235.20743664205565,
+        "stdDev": 310.8808827253843,
+        "nodata_value": 1023
+      },
+      {
+        "bandId": 2,
+        "data_type": "uint16",
+        "color_interpretation": "undefined",
+        "min": 1,
+        "max": 1023,
+        "minimum": 1,
+        "maximum": 1023,
+        "mean": 244.480566109092,
+        "stdDev": 317.8153959460175,
+        "nodata_value": 1023
+      },
+      {
+        "bandId": 3,
+        "data_type": "uint16",
+        "color_interpretation": "undefined",
+        "min": 229,
+        "max": 1023,
+        "minimum": 229,
+        "maximum": 1023,
+        "mean": 726.5546508568933,
+        "stdDev": 170.70223031631565,
+        "nodata_value": 1023
+      },
+      {
+        "bandId": 4,
+        "data_type": "uint16",
+        "color_interpretation": "undefined",
+        "min": 285,
+        "max": 1023,
+        "minimum": 285,
+        "maximum": 1023,
+        "mean": 732.5611491847309,
+        "stdDev": 159.47891064678652,
+        "nodata_value": 1023
+      },
+      {
+        "bandId": 5,
+        "data_type": "uint16",
+        "color_interpretation": "undefined",
+        "min": 76,
+        "max": 1023,
+        "minimum": 76,
+        "maximum": 1023,
+        "mean": 907.7053838352829,
+        "stdDev": 94.24927597567105,
+        "nodata_value": 1023
+      },
+      {
+        "bandId": 6,
+        "data_type": "uint16",
+        "color_interpretation": "undefined",
+        "min": 0,
+        "max": 995,
+        "minimum": 0,
+        "maximum": 995,
+        "mean": 712.1173351029882,
+        "stdDev": 383.3446935801385,
+        "nodata_value": 1023
+      }
+    ]
+  }

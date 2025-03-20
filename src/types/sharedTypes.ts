@@ -1,8 +1,8 @@
 export interface CoverageType {
-  left: number;
-  right: number;
-  top: number;
-  bottom: number;
+  lat1: number;
+  lat2: number;
+  lon1: number;
+  lon2: number;
 }
 
 export interface CornerCoords {

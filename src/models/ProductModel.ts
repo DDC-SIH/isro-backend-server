@@ -1,27 +1,32 @@
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose, { Schema, Document, Types } from "mongoose";
 
 export interface ProductType extends Document {
   productId: string;
-  name: string;
   description?: string;
-  satellite?: string;
+  satellite: Types.ObjectId;
   dataStatus: boolean;
-  aquisition_datetime: string;
+  aquisition_datetime: number;
   processingLevel: string;
   version: string;
   revision: string;
 }
 
-const ProductSchema: Schema<ProductType> = new Schema({
-  productId: { type: String, required: true },
-  name: { type: String, required: true },
-  description: { type: String, required: false },
-  satellite: { type: String, required: false },
-  dataStatus: { type: Boolean, required: true, default: true },
-  aquisition_datetime: { type: String, required: false },
-  processingLevel: { type: String, required: true },
-  version: { type: String, required: false },
-  revision: { type: String, required: false },
-});
+const ProductSchema: Schema<ProductType> = new Schema(
+  {
+    productId: { type: String, required: true },
+    description: { type: String, required: false, defaault: "" },
+    satellite: {
+      type: Schema.Types.ObjectId,
+      ref: "Satellite",
+      required: true,
+    },
+    dataStatus: { type: Boolean, required: true, default: true },
+    aquisition_datetime: { type: Number, required: true },
+    processingLevel: { type: String, required: true },
+    version: { type: String, required: false },
+    revision: { type: String, required: false },
+  },
+  { timestamps: true }
+);
 
 export default mongoose.model<ProductType>("Product", ProductSchema);

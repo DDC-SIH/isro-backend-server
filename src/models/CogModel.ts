@@ -3,7 +3,7 @@ import { CoverageType, CornerCoords, BandType } from "../types/sharedTypes";
 
 export interface CogType extends Document {
   filename: string;
-  aquisition_datetime: string;
+  aquisition_datetime: number;
   coverage?: CoverageType;
   filepath: string;
   coordinateSystem: any;
@@ -11,17 +11,26 @@ export interface CogType extends Document {
   cornerCoords?: CornerCoords;
   bands: [BandType];
   product: Types.ObjectId;
+  processingLevel: string;
+  version: string;
+  revision: string;
 }
 
-const CogSchema: Schema<CogType> = new Schema({
-  filename: { type: String, required: true },
-  aquisition_datetime: { type: String, required: false },
-  coverage: { type: Schema.Types.Mixed, required: false },
-  filepath: { type: String, required: true },
-  size: { type: Schema.Types.Mixed, required: false },
-  cornerCoords: { type: Schema.Types.Mixed, required: false },
-  bands: { type: Schema.Types.Mixed, required: true },
-  product: { type: Schema.Types.ObjectId, ref: "Product" },
-});
+const CogSchema: Schema<CogType> = new Schema(
+  {
+    filename: { type: String, required: true },
+    aquisition_datetime: { type: Number, required: true },
+    coverage: { type: Schema.Types.Mixed, required: false },
+    filepath: { type: String, required: true },
+    size: { type: Schema.Types.Mixed, required: false },
+    cornerCoords: { type: Schema.Types.Mixed, required: false },
+    bands: { type: Schema.Types.Mixed, required: true },
+    product: { type: Schema.Types.ObjectId, ref: "Product" },
+    processingLevel: { type: String, required: true },
+    version: { type: String, required: false },
+    revision: { type: String, required: false },
+  },
+  { timestamps: true }
+);
 
 export default mongoose.model<CogType>("COG", CogSchema);

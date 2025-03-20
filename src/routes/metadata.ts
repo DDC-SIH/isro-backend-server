@@ -4,6 +4,13 @@ import COG from "../models/CogModel";
 import ProductModel from "../models/ProductModel";
 import CogModel from "../models/CogModel";
 import { VALID_FRAME_COUNTS } from "../consts";
+import SatelliteModel, { SatelliteType } from "../models/SatelliteModel";
+import {
+  convertFromTimestamp,
+  convertToTimestamp,
+  writeJsonToFile,
+} from "../lib/utils";
+import path from "path";
 
 const metadataRouter = express.Router();
 
@@ -37,22 +44,41 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
       cornerCoords,
       bands,
     } = req.body;
-    console.log(req.body);
+    try {
+      const data: any = {};
 
+      // Parse the request body
+      Object.keys(req.body).forEach((key) => {
+        data[key] = req.body[key];
+      });
+
+      // Save the data to a file
+      writeJsonToFile(path.join(__dirname, "data.json"), data).catch((err) =>
+        console.error(err)
+      );
+    } catch (error) {
+      console.error(error);
+    }
+
+    const sat = await SatelliteModel.findOne({ satelliteId: satellite });
+    if (!sat) {
+      return res.status(400).json({ message: "Satellite is not defined yet." });
+    }
+    const timestamp = convertToTimestamp(aquisition_datetime);
+    console.log("Timestamp: ", timestamp);
+    console.log("Verifying Timestmap: ", convertFromTimestamp(timestamp));
     const newProduct = new Product({
       productId,
       name,
       description,
-      satellite,
-      aquisition_datetime,
+      satellite: sat._id,
       processingLevel,
       version,
       revision,
+      aquisition_datetime: timestamp,
     });
     await newProduct.save();
 
-    console.log(newProduct);
-    
     const newCog = new COG({
       filename,
       filepath,
@@ -61,8 +87,11 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
       size,
       cornerCoords,
       bands,
+      processingLevel,
+      version,
+      revision,
       product: newProduct._id,
-      aquisition_datetime,
+      aquisition_datetime: timestamp,
     });
     await newCog.save();
 
@@ -150,10 +179,10 @@ metadataRouter.get("/product/range", async (req: Request, res: Response) => {
       return res.status(400).json({ message: "start and end time required" });
     }
 
-    const startDate = new Date(start as string);
-    const endDate = new Date(end as string);
+    const startTimestamp = new Date(start as string);
+    const endTimestamp = new Date(end as string);
     const products = await ProductModel.find({
-      aquisition_datetime: { $gte: startDate, $lte: endDate },
+      aquisition_datetime: { $gte: startTimestamp, $lte: endTimestamp },
     });
     res.status(200).json(products);
   } catch (error) {
