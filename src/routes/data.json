@@ -1,44 +1,44 @@
 {
-  "productId": "3RIMG_12MAR2025_0945_L2B_UTH_V01R00.cog.tif",
+  "productId": "3RIMG_12MAR2025_0945_L2B_UTH_V01R00",
   "description": "unknown",
   "satellite": "3R",
   "processingLevel": "L2B",
   "version": "01",
   "revision": "00",
-  "filename": "3RIMG_12MAR2025_0945_L2B_UTH_V01R00",
+  "filename": "3RIMG_12MAR2025_0945_L2B_UTH_V01R00.cog.tif",
   "filepath": "/COG/3RIMG/2025/03/12",
-  "aquisition_datetime": "120320250945",
+  "aquisition_datetime": "140320250945",
   "coverage": {
-    "lat1": -66.0185611293923,
-    "lat2": 66.07731887060773,
-    "lon1": -7.238703422465171,
-    "lon2": 155.18141657753486
+    "lat1": -81.10984243419348,
+    "lat2": 81.09211756580653,
+    "lon1": -7.299476768505016,
+    "lon2": 155.26608323149497
   },
   "coordinateSystem": "GEOGCS[\"WGS 84\",DATUM[\"World Geodetic System 1984\",SPHEROID[\"WGS 84\",6378137,298.257223563]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AXIS[\"Latitude\",NORTH],AXIS[\"Longitude\",EAST]]",
   "size": {
-    "width": 4467,
-    "height": 3633
+    "width": 4471,
+    "height": 4461
   },
   "cornerCoords": {
     "upperLeft": [
-      -7.238703422465171,
-      66.07731887060773
+      -7.299476768505016,
+      81.09211756580653
     ],
     "lowerLeft": [
-      -7.238703422465171,
-      -66.0185611293923
+      -7.299476768505016,
+      -81.10984243419348
     ],
     "lowerRight": [
-      155.18141657753486,
-      -66.0185611293923
+      155.26608323149497,
+      -81.10984243419348
     ],
     "upperRight": [
-      155.18141657753486,
-      66.07731887060773
+      155.26608323149497,
+      81.09211756580653
     ],
     "center": [
-      73.97135657753485,
-      0.029378870607715157
+      73.98330323149497,
+      -0.008862434193474655
     ]
   },
   "bands": [
@@ -47,11 +47,11 @@
       "data_type": "float32",
       "color_interpretation": "gray",
       "min": -999,
-      "max": 99.84613800048828,
+      "max": -999,
       "minimum": -999,
-      "maximum": 99.84613800048828,
-      "mean": -692.6060180664062,
-      "stdDev": 467.9423828125,
+      "maximum": -999,
+      "mean": -999.0000610351562,
+      "stdDev": 0.00006103515625,
       "nodata_value": -999
     }
   ]

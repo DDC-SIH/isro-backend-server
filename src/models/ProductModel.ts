@@ -10,6 +10,7 @@ export interface ProductType extends Document {
   version: string;
   revision: string;
   resolution?: string;
+  cogs: [Types.ObjectId];
 }
 
 const ProductSchema: Schema<ProductType> = new Schema(
@@ -27,6 +28,11 @@ const ProductSchema: Schema<ProductType> = new Schema(
     version: { type: String, required: false },
     revision: { type: String, required: false },
     resolution: { type: String, required: false },
+    cogs: {
+      type: [Schema.Types.ObjectId],
+      ref: "COG",
+      default: [],
+    },
   },
   { timestamps: true }
 );

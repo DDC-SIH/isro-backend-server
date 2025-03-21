@@ -5,6 +5,7 @@ export interface SatelliteType extends Document {
   name: string;
   manufacturer?: string;
   orbit?: string;
+  products: [Types.ObjectId];
 }
 
 const SatelliteSchema: Schema<SatelliteType> = new Schema(
@@ -13,6 +14,11 @@ const SatelliteSchema: Schema<SatelliteType> = new Schema(
     name: { type: String, required: true },
     manufacturer: { type: String, required: false },
     orbit: { type: String, required: false },
+    products: {
+      type: [Schema.Types.ObjectId],
+      ref: "Product",
+      default: [],
+    },
   },
   { timestamps: true }
 );
