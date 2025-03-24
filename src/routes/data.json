@@ -1,13 +1,13 @@
 {
-  "productId": "3RIMG_12MAR2025_0945_L2B_UTH_V01R00",
+  "productId": "3RIMG_24MAR2025_0115_L2B_IMC_V01R00.cog.tif",
   "description": "unknown",
   "satellite": "3R",
   "processingLevel": "L2B",
   "version": "01",
   "revision": "00",
-  "filename": "3RIMG_12MAR2025_0945_L2B_UTH_V01R00.cog.tif",
-  "filepath": "/COG/3RIMG/2025/03/12",
-  "aquisition_datetime": "140320250945",
+  "filename": "3RIMG_24MAR2025_0115_L2B_IMC_V01R00",
+  "filepath": "/COG/3RIMG/2025/03/24",
+  "aquisition_datetime": "240320250115",
   "coverage": {
     "lat1": -81.10984243419348,
     "lat2": 81.09211756580653,
@@ -47,11 +47,11 @@
       "data_type": "float32",
       "color_interpretation": "gray",
       "min": -999,
-      "max": -999,
+      "max": 60,
       "minimum": -999,
-      "maximum": -999,
-      "mean": -999.0000610351562,
-      "stdDev": 0.00006103515625,
+      "maximum": 60,
+      "mean": -95.80110931396484,
+      "stdDev": 294.2244873046875,
       "nodata_value": -999
     }
   ]

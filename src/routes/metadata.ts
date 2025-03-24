@@ -44,21 +44,21 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
       cornerCoords,
       bands,
     } = req.body;
-    try {
-      const data: any = {};
+    // try {
+    //   const data: any = {};
 
-      // Parse the request body
-      Object.keys(req.body).forEach((key) => {
-        data[key] = req.body[key];
-      });
+    //   // Parse the request body
+    //   Object.keys(req.body).forEach((key) => {
+    //     data[key] = req.body[key];
+    //   });
 
-      // Save the data to a file
-      writeJsonToFile(path.join(__dirname, "data.json"), data).catch((err) =>
-        console.error(err)
-      );
-    } catch (error) {
-      console.error(error);
-    }
+    //   // Save the data to a file
+    //   writeJsonToFile(path.join(__dirname, "data.json"), data).catch((err) =>
+    //     console.error(err)
+    //   );
+    // } catch (error) {
+    //   console.error(error);
+    // }
 
     const sat = await SatelliteModel.findOne({ satelliteId: satellite });
     if (!sat) {
@@ -69,16 +69,15 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
     console.log("Verifying Timestmap: ", convertFromTimestamp(timestamp));
 
     let productRef = await Product.findOne({ productId });
-    const isNew = productRef ? false : true;
     console.log({
-      message: "got previous product",
-      isNew,
+      message: productRef ? "got previous product " + productId : "new product",
     });
     const newProduct = new Product({
       productId,
       name,
       description,
       satellite: sat._id,
+      satelliteId: satellite,
       processingLevel,
       version,
       revision,
@@ -88,6 +87,7 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
     const newCog = new COG({
       filename,
       satellite: sat._id,
+      satelliteId: satellite,
       filepath,
       coverage,
       coordinateSystem,
@@ -100,6 +100,7 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
       product: productRef ? productRef._id : newProduct._id,
       aquisition_datetime: timestamp,
     });
+
     if (productRef) {
       productRef
         .updateOne(
@@ -112,16 +113,18 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
         )
         .exec();
     } else {
-      newProduct.updateOne(
-        {
-          $addToSet: { cogs: newCog._id },
-        },
-        {
-          new: true,
-        }
-      );
+      newProduct
+        .updateOne(
+          {
+            $addToSet: { cogs: newCog._id },
+          },
+          {
+            new: true,
+          }
+        )
+        .exec();
 
-      await newProduct.save();
+      // await newProduct.save();
       await SatelliteModel.findOneAndUpdate(
         {
           satelliteId: satellite,
@@ -138,7 +141,7 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
 
     res.status(200).send({
       message: "metadata saved successful",
-      product: newProduct,
+      product: productRef ? productRef : newProduct,
       cog: newCog,
     });
   } catch (error) {
@@ -213,30 +216,44 @@ metadataRouter.get("/cog/info/:id", async (req: Request, res: Response) => {
   }
 });
 
-metadataRouter.get("/product/range", async (req: Request, res: Response) => {
-  try {
-    const { start, end, satId } = req.query;
-    if (!start || !end) {
-      return res.status(400).json({ message: "start and end time required" });
+metadataRouter.get(
+  "/:satId/product/range",
+  async (req: Request, res: Response) => {
+    try {
+      const { start, end } = req.query;
+      if (!start || !end) {
+        return res.status(400).json({ message: "start and end time required" });
+      }
+      const satId = req.params.satId;
+
+      const startTimestamp = new Date(start as string).getTime();
+      const endTimestamp = new Date(end as string).getTime();
+      console.log({ startTimestamp, endTimestamp });
+
+      // const products = await ProductModel.find(filter).populate({
+      //   path: "satellite",
+      //   match: { satelliteId: satId },
+      // });
+
+      const sat = await SatelliteModel.findOne({ satelliteId: satId })
+        .select("products")
+        .populate({
+          path: "products",
+          match: {
+            aquisition_datetime: { $gte: startTimestamp, $lte: endTimestamp },
+          },
+        });
+
+      if (!sat) {
+        return res.status(404).json({ message: "Invalid Satellite" });
+      }
+      res.status(200).json(sat.products);
+    } catch (error) {
+      console.error(error);
+      res.status(500).send("Something is wrong");
     }
-
-    const startTimestamp = new Date(start as string).getTime();
-    const endTimestamp = new Date(end as string).getTime();
-    console.log({ startTimestamp, endTimestamp });
-    let filter: any = {
-      aquisition_datetime: { $gte: startTimestamp, $lte: endTimestamp },
-    };
-
-    const products = await ProductModel.find(filter).populate({
-      path: "satellite",
-      match: { satelliteId: satId },
-    });
-    res.status(200).json(products);
-  } catch (error) {
-    console.error(error);
-    res.status(500).send("Something is wrong");
   }
-});
+);
 
 metadataRouter.get("/:satId/cog/range", async (req: Request, res: Response) => {
   try {
@@ -244,12 +261,14 @@ metadataRouter.get("/:satId/cog/range", async (req: Request, res: Response) => {
     if (!start || !end) {
       return res.status(400).json({ message: "start adn end time required" });
     }
+    const satId = req.params.satId;
 
     const startDate = new Date(start as string).getTime();
     const endDate = new Date(end as string).getTime();
 
     const cogs = await CogModel.find({
       aquisition_datetime: { $gte: startDate, $lte: endDate },
+      satelliteId: satId,
     });
     res.status(200).json(cogs);
   } catch (error) {
@@ -269,15 +288,26 @@ metadataRouter.get("/:satId/cog/last", async (req: Request, res: Response) => {
         .status(400)
         .json({ message: "invalid frame count, not allowed" });
     }
+    const satId = req.params.satId;
 
     const query = timestamp
       ? {
           aquisition_datetime: {
             $lte: new Date(timestamp as string).getTime(),
           },
+          satelliteId: satId,
         }
-      : {};
-
+      : { satelliteId: satId };
+    // const cogs = await SatelliteModel.findOne({ satelliteId: satId })
+    //   .select("products")
+    //   .populate({
+    //     path: "products",
+    //     populate: {
+    //       path: "cogs",
+    //       match: query,
+    //       options: { limit: limit, sort: { aquisition_datetime: -1 } },
+    //     },
+    //   });
     const cogs = await CogModel.find(query)
       .sort({ aquisition_datetime: -1 })
       .limit(limit);
@@ -293,7 +323,7 @@ metadataRouter.get(
   async (req: Request, res: Response) => {
     try {
       const { timestamp, count } = req.query;
-
+      const satId = req.params.satId;
       const limit = count ? parseInt(count as string, 10) : DEFAULT_FRAME_COUNT;
 
       if (!VALID_FRAME_COUNTS.includes(limit)) {
@@ -301,19 +331,30 @@ metadataRouter.get(
           .status(400)
           .json({ message: "invalid frame count, not allowed" });
       }
-
       const query = timestamp
         ? {
             aquisition_datetime: {
               $lte: new Date(timestamp as string).getTime(),
             },
+            satelliteId: satId,
           }
-        : {};
+        : { satelliteId: satId };
+      // const sat = await SatelliteModel.findOne({ satelliteId: satId })
+      //   .select("products")
+      //   .populate({
+      //     path: "products",
+      //     match: query,
+      //     options: { limit: limit, sort: { aquisition_datetime: -1 } },
+      //   });
 
-      const cogs = await ProductModel.find(query)
-        .sort({ aquisition_datetime: -1 })
-        .limit(limit);
-      res.status(200).json(cogs);
+      const products = await ProductModel.find(query)
+        .limit(limit)
+        .sort({ aquisition_datetime: -1 });
+
+      if (products.length < 1) {
+        return res.status(404).json({ message: "sat not found" });
+      }
+      res.status(200).json({ products });
     } catch (error) {
       console.error(error);
       res.status(500).send("Something is wrong");

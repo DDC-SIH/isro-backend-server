@@ -11,6 +11,7 @@ export interface ProductType extends Document {
   revision: string;
   resolution?: string;
   cogs: [Types.ObjectId];
+  satelliteId: string;
 }
 
 const ProductSchema: Schema<ProductType> = new Schema(
@@ -25,6 +26,7 @@ const ProductSchema: Schema<ProductType> = new Schema(
     dataStatus: { type: Boolean, required: true, default: true },
     aquisition_datetime: { type: Number, required: true },
     processingLevel: { type: String, required: true },
+    satelliteId: { type: String, required: true },
     version: { type: String, required: false },
     revision: { type: String, required: false },
     resolution: { type: String, required: false },

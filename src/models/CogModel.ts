@@ -16,6 +16,7 @@ export interface CogType extends Document {
   revision: string;
   resolution?: string;
   satellite: Types.ObjectId;
+  satelliteId: string;
 }
 
 const CogSchema: Schema<CogType> = new Schema(
@@ -29,6 +30,7 @@ const CogSchema: Schema<CogType> = new Schema(
     bands: { type: Schema.Types.Mixed, required: true },
     product: { type: Schema.Types.ObjectId, ref: "Product" },
     processingLevel: { type: String, required: true },
+    satelliteId: { type: String, required: true },
     version: { type: String, required: false },
     revision: { type: String, required: false },
     resolution: { type: String, required: false },
