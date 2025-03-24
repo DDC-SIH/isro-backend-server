@@ -8,7 +8,7 @@ import SatelliteModel, { SatelliteType } from "../models/SatelliteModel";
 import {
   convertFromTimestamp,
   convertToTimestamp,
-  writeJsonToFile,
+  // writeJsonToFile,
 } from "../lib/utils";
 import path from "path";
 
@@ -180,9 +180,43 @@ metadataRouter.get("/product/all", async (req: Request, res: Response) => {
   }
 });
 
+metadataRouter.get(
+  "/:satId/product/all",
+  async (req: Request, res: Response) => {
+    const satId = req.params.satId;
+    try {
+      const productList = await ProductModel.find({ satelliteId: satId });
+
+      res.status(200).json({
+        message: "Retrieved Data Successfully",
+        products: productList,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).send("Something is wrong");
+    }
+  }
+);
+
 metadataRouter.get("/cog/all", async (req: Request, res: Response) => {
   try {
     const cogList = await CogModel.find();
+
+    res.status(200).json({
+      message: "Retrieved Data Successfully",
+      cogs: cogList,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Something is wrong");
+  }
+});
+
+metadataRouter.get("/:satId/cog/all", async (req: Request, res: Response) => {
+  const satId = req.params.satId;
+
+  try {
+    const cogList = await CogModel.find({ satelliteId: satId });
 
     res.status(200).json({
       message: "Retrieved Data Successfully",
@@ -235,19 +269,15 @@ metadataRouter.get(
       //   match: { satelliteId: satId },
       // });
 
-      const sat = await SatelliteModel.findOne({ satelliteId: satId })
-        .select("products")
-        .populate({
-          path: "products",
-          match: {
-            aquisition_datetime: { $gte: startTimestamp, $lte: endTimestamp },
-          },
-        });
+      const products = await ProductModel.find({
+        aquisition_datetime: { $gte: startTimestamp, $lte: endTimestamp },
+        satelliteId: satId,
+      });
 
-      if (!sat) {
-        return res.status(404).json({ message: "Invalid Satellite" });
+      if (products.length < 1) {
+        return res.status(404).json({ message: "Invalid query" });
       }
-      res.status(200).json(sat.products);
+      res.status(200).json(products);
     } catch (error) {
       console.error(error);
       res.status(500).send("Something is wrong");
