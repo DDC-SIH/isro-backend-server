@@ -12,8 +12,8 @@ const SatelliteSchema: Schema<SatelliteType> = new Schema(
   {
     satelliteId: { type: String, required: true },
     name: { type: String, required: true },
-    manufacturer: { type: String, required: false },
-    orbit: { type: String, required: false },
+    manufacturer: { type: String, default: "ISRO" },
+    orbit: { type: String, required: false, default: "unknown" },
     products: {
       type: [Schema.Types.ObjectId],
       ref: "Product",

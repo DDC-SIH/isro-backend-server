@@ -8,6 +8,7 @@ import SatelliteModel, { SatelliteType } from "../models/SatelliteModel";
 import {
   convertFromTimestamp,
   convertToTimestamp,
+  writeJsonToFile,
   // writeJsonToFile,
 } from "../lib/utils";
 import path from "path";
@@ -44,22 +45,25 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
       cornerCoords,
       bands,
     } = req.body;
-    // try {
-    //   const data: any = {};
+    try {
+      const data: any = {};
 
-    //   // Parse the request body
-    //   Object.keys(req.body).forEach((key) => {
-    //     data[key] = req.body[key];
-    //   });
+      // Parse the request body
+      Object.keys(req.body).forEach((key) => {
+        data[key] = req.body[key];
+      });
 
-    //   // Save the data to a file
-    //   writeJsonToFile(path.join(__dirname, "data.json"), data).catch((err) =>
-    //     console.error(err)
-    //   );
-    // } catch (error) {
-    //   console.error(error);
-    // }
-
+      // Save the data to a file
+      writeJsonToFile(
+        path.join(
+          __dirname,
+          `../../Requests/${new Date().getFullYear()}/${new Date().getMonth()}/${new Date().getDay()}/data_${new Date().toISOString()}.json`
+        ),
+        data
+      ).catch((err) => console.error(err));
+    } catch (error) {
+      console.error(error);
+    }
     const sat = await SatelliteModel.findOne({ satelliteId: satellite });
     if (!sat) {
       return res.status(400).json({ message: "Satellite is not defined yet." });
@@ -123,7 +127,7 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
           }
         )
         .exec();
-
+      await newProduct.save();
       // await newProduct.save();
       await SatelliteModel.findOneAndUpdate(
         {
@@ -287,7 +291,7 @@ metadataRouter.get(
 
 metadataRouter.get("/:satId/cog/range", async (req: Request, res: Response) => {
   try {
-    const { start, end } = req.query;
+    const { start, end, processingLevel } = req.query;
     if (!start || !end) {
       return res.status(400).json({ message: "start adn end time required" });
     }
@@ -295,11 +299,14 @@ metadataRouter.get("/:satId/cog/range", async (req: Request, res: Response) => {
 
     const startDate = new Date(start as string).getTime();
     const endDate = new Date(end as string).getTime();
-
-    const cogs = await CogModel.find({
+    let filter: any = {
       aquisition_datetime: { $gte: startDate, $lte: endDate },
       satelliteId: satId,
-    });
+    };
+    if (processingLevel) {
+      filter = { ...filter, processingLevel: processingLevel };
+    }
+    const cogs = await CogModel.find(filter);
     res.status(200).json(cogs);
   } catch (error) {
     console.error(error);

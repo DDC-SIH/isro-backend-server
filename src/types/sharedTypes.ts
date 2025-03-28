@@ -16,7 +16,7 @@ export interface CornerCoords {
 export interface BandType {
   bandId: number;
   type: string;
-  colorInterpretation: string;
+  colorInterpretation?: string;
   min: number;
   max: number;
   minimum: number;
