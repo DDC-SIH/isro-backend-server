@@ -1,7 +1,6 @@
 import express, { Request, Response } from "express";
 import Product from "../models/ProductModel";
 import COG from "../models/CogModel";
-import ProductModel from "../models/ProductModel";
 import CogModel from "../models/CogModel";
 import { DEFAULT_FRAME_COUNT, VALID_FRAME_COUNTS } from "../consts";
 import SatelliteModel, { SatelliteType } from "../models/SatelliteModel";
@@ -9,7 +8,6 @@ import {
   convertFromTimestamp,
   convertToTimestamp,
   writeJsonToFile,
-  // writeJsonToFile,
 } from "../lib/utils";
 import path from "path";
 
@@ -72,23 +70,9 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
     console.log("Timestamp: ", timestamp);
     console.log("Verifying Timestmap: ", convertFromTimestamp(timestamp));
 
-    // let productRef = await Product.findOne({ productId });
-    // console.log({
-    //   message: productRef ? "got previous product " + productId : "new product",
-    // });
-    // const newProduct = new Product({
-    //   productId,
-    //   name,
-    //   description,
-    //   satellite: sat._id,
-    //   satelliteId: satellite,
-    //   processingLevel,
-    //   version,
-    //   revision,
-    //   aquisition_datetime: timestamp,
-    // });
-
     const newCog = new COG({
+      name,
+      description,
       filename,
       satellite: sat._id,
       satelliteId: satellite,
@@ -101,34 +85,9 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
       processingLevel,
       version,
       revision,
-      // product: productRef ? productRef._id : newProduct._id,
       aquisition_datetime: timestamp,
     });
 
-    // if (productRef) {
-    //   productRef
-    //     .updateOne(
-    //       {
-    //         $addToSet: { cogs: newCog._id },
-    //       },
-    //       {
-    //         new: true,
-    //       }
-    //     )
-    //     .exec();
-    // } else {
-    //   newProduct
-    //     .updateOne(
-    //       {
-    //         $addToSet: { cogs: newCog._id },
-    //       },
-    //       {
-    //         new: true,
-    //       }
-    //     )
-    //     .exec();
-    //   await newProduct.save();
-    // await newProduct.save();
     await SatelliteModel.findOneAndUpdate(
       {
         satelliteId: satellite,
@@ -145,7 +104,6 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
 
     res.status(200).send({
       message: "metadata saved successful",
-      // product: productRef ? productRef : newProduct,
       cog: newCog,
     });
   } catch (error) {
@@ -153,54 +111,6 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
     res.status(500).send("Something is wrong");
   }
 });
-
-metadataRouter.get("/all", async (req: Request, res: Response) => {
-  try {
-    const productList = await ProductModel.find();
-    const cogList = await CogModel.find();
-
-    res.status(200).json({
-      message: "Retrieved Data Successfully",
-      products: productList,
-      cogs: cogList,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).send("Something is wrong");
-  }
-});
-
-metadataRouter.get("/product/all", async (req: Request, res: Response) => {
-  try {
-    const productList = await ProductModel.find();
-
-    res.status(200).json({
-      message: "Retrieved Data Successfully",
-      products: productList,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).send("Something is wrong");
-  }
-});
-
-metadataRouter.get(
-  "/:satId/product/all",
-  async (req: Request, res: Response) => {
-    const satId = req.params.satId;
-    try {
-      const productList = await ProductModel.find({ satelliteId: satId });
-
-      res.status(200).json({
-        message: "Retrieved Data Successfully",
-        products: productList,
-      });
-    } catch (error) {
-      console.error(error);
-      res.status(500).send("Something is wrong");
-    }
-  }
-);
 
 metadataRouter.get("/cog/all", async (req: Request, res: Response) => {
   try {
@@ -232,17 +142,6 @@ metadataRouter.get("/:satId/cog/all", async (req: Request, res: Response) => {
   }
 });
 
-metadataRouter.get("/product/info/:id", async (req: Request, res: Response) => {
-  try {
-    const product = await ProductModel.findById(req.params.id);
-
-    res.status(200).json(product);
-  } catch (error) {
-    console.error(error);
-    res.status(500).send("Something is wrong");
-  }
-});
-
 metadataRouter.get("/cog/info/:id", async (req: Request, res: Response) => {
   try {
     const cog = await CogModel.findById(req.params.id);
@@ -253,41 +152,6 @@ metadataRouter.get("/cog/info/:id", async (req: Request, res: Response) => {
     res.status(500).send("Something is wrong");
   }
 });
-
-metadataRouter.get(
-  "/:satId/product/range",
-  async (req: Request, res: Response) => {
-    try {
-      const { start, end } = req.query;
-      if (!start || !end) {
-        return res.status(400).json({ message: "start and end time required" });
-      }
-      const satId = req.params.satId;
-
-      const startTimestamp = new Date(start as string).getTime();
-      const endTimestamp = new Date(end as string).getTime();
-      console.log({ startTimestamp, endTimestamp });
-
-      // const products = await ProductModel.find(filter).populate({
-      //   path: "satellite",
-      //   match: { satelliteId: satId },
-      // });
-
-      const products = await ProductModel.find({
-        aquisition_datetime: { $gte: startTimestamp, $lte: endTimestamp },
-        satelliteId: satId,
-      });
-
-      if (products.length < 1) {
-        return res.status(404).json({ message: "Invalid query" });
-      }
-      res.status(200).json(products);
-    } catch (error) {
-      console.error(error);
-      res.status(500).send("Something is wrong");
-    }
-  }
-);
 
 metadataRouter.get("/:satId/cog/range", async (req: Request, res: Response) => {
   try {
@@ -355,52 +219,25 @@ metadataRouter.get("/:satId/cog/last", async (req: Request, res: Response) => {
   }
 });
 
-metadataRouter.get(
-  "/:satId/product/last",
-  async (req: Request, res: Response) => {
-    try {
-      const { timestamp, count } = req.query;
-      const satId = req.params.satId;
-      const limit = count ? parseInt(count as string, 10) : DEFAULT_FRAME_COUNT;
-
-      if (!VALID_FRAME_COUNTS.includes(limit)) {
-        return res
-          .status(400)
-          .json({ message: "invalid frame count, not allowed" });
-      }
-      const query = timestamp
-        ? {
-            aquisition_datetime: {
-              $lte: new Date(timestamp as string).getTime(),
-            },
-            satelliteId: satId,
-          }
-        : { satelliteId: satId };
-      // const sat = await SatelliteModel.findOne({ satelliteId: satId })
-      //   .select("products")
-      //   .populate({
-      //     path: "products",
-      //     match: query,
-      //     options: { limit: limit, sort: { aquisition_datetime: -1 } },
-      //   });
-
-      const products = await ProductModel.find(query)
-        .limit(limit)
-        .sort({ aquisition_datetime: -1 });
-
-      if (products.length < 1) {
-        return res.status(404).json({ message: "sat not found" });
-      }
-      res.status(200).json({ products });
-    } catch (error) {
-      console.error(error);
-      res.status(500).send("Something is wrong");
-    }
-  }
-);
-
 // new applications
-
+/**
+ * Get a specific COG for a satellite
+ *
+ * Usage:
+ * GET /:satId/cog/show
+ *
+ * Parameters:
+ * - satId: Satellite ID in the URL path
+ *
+ * Query Parameters:
+ * - datetime (optional): ISO date string to get the COG from a specific time
+ * - type (optional): Filter by COG type
+ *
+ * Examples:
+ * - GET /3R/cog/show                                      - Get latest COG for satellite 3R
+ * - GET /3R/cog/show?datetime=2025-04-03T06:47:15.751Z    - Get COG for satellite 3R from specific date
+ * - GET /3R/cog/show?type=VIS                             - Get latest thermal type COG for satellite 3R
+ */
 metadataRouter.get("/:satId/cog/show", async (req: Request, res: Response) => {
   try {
     const satId = req.params.satId;
@@ -408,12 +245,12 @@ metadataRouter.get("/:satId/cog/show", async (req: Request, res: Response) => {
     const timestamp = datetime
       ? new Date(datetime as string).getTime()
       : undefined;
-    
+
     const query: any = {
       satelliteId: satId,
       ...(type && { type: type }),
     };
-    
+
     let cog;
     if (timestamp) {
       query.aquisition_datetime = timestamp;
