@@ -72,21 +72,21 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
     console.log("Timestamp: ", timestamp);
     console.log("Verifying Timestmap: ", convertFromTimestamp(timestamp));
 
-    let productRef = await Product.findOne({ productId });
-    console.log({
-      message: productRef ? "got previous product " + productId : "new product",
-    });
-    const newProduct = new Product({
-      productId,
-      name,
-      description,
-      satellite: sat._id,
-      satelliteId: satellite,
-      processingLevel,
-      version,
-      revision,
-      aquisition_datetime: timestamp,
-    });
+    // let productRef = await Product.findOne({ productId });
+    // console.log({
+    //   message: productRef ? "got previous product " + productId : "new product",
+    // });
+    // const newProduct = new Product({
+    //   productId,
+    //   name,
+    //   description,
+    //   satellite: sat._id,
+    //   satelliteId: satellite,
+    //   processingLevel,
+    //   version,
+    //   revision,
+    //   aquisition_datetime: timestamp,
+    // });
 
     const newCog = new COG({
       filename,
@@ -101,51 +101,51 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
       processingLevel,
       version,
       revision,
-      product: productRef ? productRef._id : newProduct._id,
+      // product: productRef ? productRef._id : newProduct._id,
       aquisition_datetime: timestamp,
     });
 
-    if (productRef) {
-      productRef
-        .updateOne(
-          {
-            $addToSet: { cogs: newCog._id },
-          },
-          {
-            new: true,
-          }
-        )
-        .exec();
-    } else {
-      newProduct
-        .updateOne(
-          {
-            $addToSet: { cogs: newCog._id },
-          },
-          {
-            new: true,
-          }
-        )
-        .exec();
-      await newProduct.save();
-      // await newProduct.save();
-      await SatelliteModel.findOneAndUpdate(
-        {
-          satelliteId: satellite,
-        },
-        {
-          $addToSet: { products: newProduct._id },
-        },
-        {
-          new: true,
-        }
-      ).exec();
-    }
+    // if (productRef) {
+    //   productRef
+    //     .updateOne(
+    //       {
+    //         $addToSet: { cogs: newCog._id },
+    //       },
+    //       {
+    //         new: true,
+    //       }
+    //     )
+    //     .exec();
+    // } else {
+    //   newProduct
+    //     .updateOne(
+    //       {
+    //         $addToSet: { cogs: newCog._id },
+    //       },
+    //       {
+    //         new: true,
+    //       }
+    //     )
+    //     .exec();
+    //   await newProduct.save();
+    // await newProduct.save();
+    await SatelliteModel.findOneAndUpdate(
+      {
+        satelliteId: satellite,
+      },
+      {
+        $addToSet: { cogs: newCog._id },
+      },
+      {
+        new: true,
+      }
+    ).exec();
+    // }
     await newCog.save();
 
     res.status(200).send({
       message: "metadata saved successful",
-      product: productRef ? productRef : newProduct,
+      // product: productRef ? productRef : newProduct,
       cog: newCog,
     });
   } catch (error) {
@@ -398,5 +398,39 @@ metadataRouter.get(
     }
   }
 );
+
+// new applications
+
+metadataRouter.get("/:satId/cog/show", async (req: Request, res: Response) => {
+  try {
+    const satId = req.params.satId;
+    const { datetime, type } = req.query;
+    const timestamp = datetime
+      ? new Date(datetime as string).getTime()
+      : undefined;
+    
+    const query: any = {
+      satelliteId: satId,
+      ...(type && { type: type }),
+    };
+    
+    let cog;
+    if (timestamp) {
+      query.aquisition_datetime = timestamp;
+      cog = await CogModel.findOne(query);
+    } else {
+      // If no timestamp provided, get the latest one
+      cog = await CogModel.findOne(query).sort({ aquisition_datetime: -1 });
+    }
+
+    if (!cog) {
+      return res.status(404).json({ message: "sat not found" });
+    }
+    res.status(200).json({ cog });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Something is wrong");
+  }
+});
 
 export default metadataRouter;

@@ -18,11 +18,20 @@ export function logRequest(req: Request, res: Response, next: NextFunction) {
 
 export function writeJsonToFile(filePath: string, data: any) {
   const jsonData = JSON.stringify(data, null, 2);
+  const directory = path.dirname(filePath);
 
   return new Promise<void>((resolve, reject) => {
-    fs.writeFile(filePath, jsonData, (err) => {
-      if (err) return reject(err);
-      resolve();
+    // Create directory if it doesn't exist
+    fs.mkdir(directory, { recursive: true }, (mkdirErr) => {
+      if (mkdirErr && mkdirErr.code !== 'EEXIST') {
+        return reject(mkdirErr);
+      }
+      
+      // Write the file
+      fs.writeFile(filePath, jsonData, (err) => {
+        if (err) return reject(err);
+        resolve();
+      });
     });
   });
 }

@@ -5,7 +5,7 @@ export interface SatelliteType extends Document {
   name: string;
   manufacturer?: string;
   orbit?: string;
-  products: [Types.ObjectId];
+  cogs: [Types.ObjectId];
 }
 
 const SatelliteSchema: Schema<SatelliteType> = new Schema(
@@ -14,9 +14,9 @@ const SatelliteSchema: Schema<SatelliteType> = new Schema(
     name: { type: String, required: true },
     manufacturer: { type: String, default: "ISRO" },
     orbit: { type: String, required: false, default: "unknown" },
-    products: {
+    cogs: {
       type: [Schema.Types.ObjectId],
-      ref: "Product",
+      ref: "COG",
       default: [],
     },
   },

@@ -10,13 +10,14 @@ export interface CogType extends Document {
   size: { width: number; height: number };
   cornerCoords?: CornerCoords;
   bands: [BandType];
-  product: Types.ObjectId;
+  // product: Types.ObjectId;
   processingLevel: string;
   version: string;
   revision: string;
   resolution?: string;
   satellite: Types.ObjectId;
   satelliteId: string;
+  type: string;
 }
 
 const CogSchema: Schema<CogType> = new Schema(
@@ -28,7 +29,7 @@ const CogSchema: Schema<CogType> = new Schema(
     size: { type: Schema.Types.Mixed, required: false },
     cornerCoords: { type: Schema.Types.Mixed, required: false },
     bands: { type: Schema.Types.Mixed, required: true },
-    product: { type: Schema.Types.ObjectId, ref: "Product" },
+    // product: { type: Schema.Types.ObjectId, ref: "Product" },
     processingLevel: { type: String, required: true },
     satelliteId: { type: String, required: true },
     version: { type: String, required: false },
@@ -39,6 +40,8 @@ const CogSchema: Schema<CogType> = new Schema(
       ref: "Satellite",
       required: true,
     },
+    coordinateSystem: { type: Schema.Types.Mixed, required: false },
+    type: { type: String, required: true },
   },
   { timestamps: true }
 );
