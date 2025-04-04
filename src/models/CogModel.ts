@@ -2,8 +2,8 @@ import mongoose, { Schema, Document, Types } from "mongoose";
 import { CoverageType, CornerCoords, BandType } from "../types/sharedTypes";
 
 export interface CogType extends Document {
-  name: string;
-  description: string;
+  // name: string;
+  // description: string;
   filename: string;
   aquisition_datetime: number;
   coverage?: CoverageType;
@@ -24,8 +24,8 @@ export interface CogType extends Document {
 
 const CogSchema: Schema<CogType> = new Schema(
   {
-    name: { type: String, required: true },
-    description: { type: String, required: true },
+    // name: { type: String, required: true },
+    // description: { type: String, required: true },
     filename: { type: String, required: true },
     aquisition_datetime: { type: Number, required: true },
     coverage: { type: Schema.Types.Mixed, required: false },

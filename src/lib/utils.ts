@@ -17,18 +17,21 @@ export function logRequest(req: Request, res: Response, next: NextFunction) {
 }
 
 export function writeJsonToFile(filePath: string, data: any) {
-  const jsonData = JSON.stringify(data, null, 2);
+  // Sanitize file path by replacing invalid filename characters
+  const sanitizedFilename = path.basename(filePath).replace(/[<>:"\/\\|?*]+/g, "_");
   const directory = path.dirname(filePath);
+  const sanitizedPath = path.join(directory, sanitizedFilename);
+  const jsonData = JSON.stringify(data, null, 2);
 
   return new Promise<void>((resolve, reject) => {
     // Create directory if it doesn't exist
     fs.mkdir(directory, { recursive: true }, (mkdirErr) => {
-      if (mkdirErr && mkdirErr.code !== 'EEXIST') {
+      if (mkdirErr && mkdirErr.code !== "EEXIST") {
         return reject(mkdirErr);
       }
-      
+
       // Write the file
-      fs.writeFile(filePath, jsonData, (err) => {
+      fs.writeFile(sanitizedPath, jsonData, (err) => {
         if (err) return reject(err);
         resolve();
       });

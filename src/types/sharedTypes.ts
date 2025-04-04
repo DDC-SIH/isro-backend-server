@@ -24,4 +24,6 @@ export interface BandType {
   mean: number;
   stdDev: number;
   noDataValue: number;
+  description?: string;
+  bandName?: string;
 }

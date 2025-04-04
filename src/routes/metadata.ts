@@ -41,6 +41,7 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
       coordinateSystem,
       size,
       cornerCoords,
+      type,
       bands,
     } = req.body;
     try {
@@ -51,14 +52,21 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
         data[key] = req.body[key];
       });
 
+      // Extract date parts
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const day = String(now.getDate()).padStart(2, "0");
+      const satelliteId = req.body.satellite || "unknown";
+
+      const savePath = path.join(
+        __dirname,
+        `../../Requests/${satelliteId}/${year}/${month}/${day}`,
+        `data_${now.toISOString()}.json`
+      );
+
       // Save the data to a file
-      writeJsonToFile(
-        path.join(
-          __dirname,
-          `../../Requests/${new Date().getFullYear()}/${new Date().getMonth()}/${new Date().getDay()}/data_${new Date().toISOString()}.json`
-        ),
-        data
-      ).catch((err) => console.error(err));
+      await writeJsonToFile(savePath, data).catch((err) => console.error(err));
     } catch (error) {
       console.error(error);
     }
@@ -71,8 +79,8 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
     console.log("Verifying Timestmap: ", convertFromTimestamp(timestamp));
 
     const newCog = new COG({
-      name,
-      description,
+      // name,
+      // description,
       filename,
       satellite: sat._id,
       satelliteId: satellite,
@@ -84,6 +92,7 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
       bands,
       processingLevel,
       version,
+      type,
       revision,
       aquisition_datetime: timestamp,
     });
@@ -237,17 +246,20 @@ metadataRouter.get("/:satId/cog/last", async (req: Request, res: Response) => {
  * - GET /3R/cog/show                                      - Get latest COG for satellite 3R
  * - GET /3R/cog/show?datetime=2025-04-03T06:47:15.751Z    - Get COG for satellite 3R from specific date
  * - GET /3R/cog/show?type=VIS                             - Get latest thermal type COG for satellite 3R
+ * - GET /3R/cog/show?processingLevel=L1B&datetime=2025-04-03T06:47:15.751Z&type=VIS - Get VIS COG for satellite 3R from specific date and processing level
  */
 metadataRouter.get("/:satId/cog/show", async (req: Request, res: Response) => {
   try {
     const satId = req.params.satId;
-    const { datetime, type } = req.query;
+    const { datetime, type, processingLevel } = req.query;
+
     const timestamp = datetime
       ? new Date(datetime as string).getTime()
       : undefined;
 
     const query: any = {
       satelliteId: satId,
+      ...(processingLevel && { processingLevel: processingLevel }),
       ...(type && { type: type }),
     };
 
@@ -261,7 +273,7 @@ metadataRouter.get("/:satId/cog/show", async (req: Request, res: Response) => {
     }
 
     if (!cog) {
-      return res.status(404).json({ message: "sat not found" });
+      return res.status(404).json({ message: "cog not found" });
     }
     res.status(200).json({ cog });
   } catch (error) {
@@ -269,5 +281,110 @@ metadataRouter.get("/:satId/cog/show", async (req: Request, res: Response) => {
     res.status(500).send("Something is wrong");
   }
 });
+
+// get available times from a date
+/**
+ * Get available times for a specific satellite
+ * - /:satId/cog/available-times
+ *
+ * Query Parameters:
+ * - date (optional): ISO date string to filter available times
+ * - processingLevel (optional): Filter by processing level
+ *
+ * Examples:
+ * - GET /3R/cog/available-times?date=2025-04-03&processingLevel=L1B - Get available times for satellite 3R on a specific date with processing level L1B
+ */
+metadataRouter.get(
+  "/:satId/cog/available-times",
+  async (req: Request, res: Response) => {
+    try {
+      const satId = req.params.satId;
+      const { date, processingLevel } = req.query;
+      const timestamp = date ? new Date(date as string).getTime() : undefined;
+      const query: any = {
+        satelliteId: satId,
+        ...(processingLevel && { processingLevel: processingLevel }),
+      };
+
+      if (timestamp) {
+        // Get start and end of the specified day
+        const startOfDay = new Date(
+          new Date(timestamp).setHours(0, 0, 0, 0)
+        ).getTime();
+        const endOfDay = new Date(
+          new Date(timestamp).setHours(23, 59, 59, 999)
+        ).getTime();
+
+        query.aquisition_datetime = {
+          $gte: startOfDay,
+          $lte: endOfDay,
+        };
+      }
+      const cogs = await CogModel.find(query).sort({ aquisition_datetime: 1 });
+      // Extract unique timestamps from cogs
+      const uniqueTimestamps = [
+        ...new Set(cogs.map((cog) => cog.aquisition_datetime)),
+      ];
+
+      // Create the array of available times with unique timestamps only
+      const availableTimes = uniqueTimestamps.map((timestamp) => {
+        return {
+          aquisition_datetime: timestamp,
+          datetime: convertFromTimestamp(timestamp),
+        };
+      });
+      res.status(200).json({ availableTimes });
+    } catch (error) {
+      console.error(error);
+      res.status(500).send("Something is wrong");
+    }
+  }
+);
+
+// get available dates
+/**
+ * Get available dates for a specific satellite
+ * - /:satId/cog/available-dates
+ *
+ * Query Parameters:
+ * - processingLevel (optional): Filter by processing level
+ *
+ * Examples:
+ * - GET /3R/cog/available-dates?processingLevel=L1B - Get available dates for satellite 3R with processing level L1B
+ */
+metadataRouter.get(
+  "/:satId/cog/available-dates",
+  async (req: Request, res: Response) => {
+    try {
+      const satId = req.params.satId;
+      const { processingLevel } = req.query;
+      const query: any = {
+        satelliteId: satId,
+        ...(processingLevel && { processingLevel: processingLevel }),
+      };
+      const cogs = await CogModel.find(query).sort({ aquisition_datetime: 1 });
+      // Extract unique dates from cogs
+      const uniqueDates = [
+        ...new Set(
+          cogs.map((cog) => {
+            const date = new Date(cog.aquisition_datetime);
+            return date.toISOString().split("T")[0]; // Get the date part (YYYY-MM-DD)
+          })
+        ),
+      ];
+      // Create the array of available dates
+      const availableDates = uniqueDates.map((date) => {
+        return {
+          date,
+          datetime: new Date(date).getTime(),
+        };
+      });
+      res.status(200).json({ availableDates });
+    } catch (error) {
+      console.error(error);
+      res.status(500).send("Something is wrong");
+    }
+  }
+);
 
 export default metadataRouter;
