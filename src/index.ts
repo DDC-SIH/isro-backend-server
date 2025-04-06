@@ -9,14 +9,18 @@ import authRoutes from "./routes/auth";
 import usersRoutes from "./routes/users";
 import satelliteRouter from "./routes/satellite";
 
-// routes
+import { config } from "dotenv";
+
+// load env variables
+config();
 
 // mongo uri
 const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/trinetra";
+
 mongoose
   .connect(MONGO_URI)
   .then(async () => {
-    console.log("Db connected");
+    console.log("Db connected to " + MONGO_URI);
   })
   .catch((err) => console.error("mongodb connection error: ", err));
 
