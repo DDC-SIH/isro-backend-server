@@ -21,11 +21,11 @@ const swaggerOptions: swaggerJSDoc.Options = {
     },
     servers: [
       {
-        url: process.env.DEVELOPMENT_URL,
+        url: "http://localhost:7000",
         description: "Development server",
       },
       {
-        url: process.env.PRODUCTION_URL,
+        url: "http://74.226.242.56:7000",
         description: "Production server",
       },
     ],
