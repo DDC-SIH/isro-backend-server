@@ -7,6 +7,49 @@ import verifyToken from "../middleware/auth";
 
 const usersRouter = express.Router();
 
+/**
+ * @swagger
+ * /api/users/register:
+ *   post:
+ *     summary: Register a new user
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
+ *                 minLength: 6
+ *               firstName:
+ *                 type: string
+ *               lastName:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: User registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 userId:
+ *                   type: string
+ *       400:
+ *         description: User already exists or validation error
+ *       500:
+ *         description: Server error
+ */
 usersRouter.post("/register", async (req: Request, res: Response) => {
   try {
     const existingUser = await User.findOne({ email: req.body.email });
@@ -38,6 +81,37 @@ usersRouter.post("/register", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/users/me:
+ *   get:
+ *     summary: Get current user information
+ *     tags: [Users]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: User information retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 _id:
+ *                   type: string
+ *                 email:
+ *                   type: string
+ *                 firstName:
+ *                   type: string
+ *                 lastName:
+ *                   type: string
+ *       400:
+ *         description: User not found
+ *       401:
+ *         description: Unauthorized, token invalid or missing
+ *       500:
+ *         description: Server error
+ */
 usersRouter.get("/me", verifyToken, async (req: Request, res: Response) => {
   try {
     const user = User.findById(req.userId);

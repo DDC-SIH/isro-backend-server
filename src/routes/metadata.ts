@@ -13,6 +13,83 @@ import path from "path";
 
 const metadataRouter = express.Router();
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     COG:
+ *       type: object
+ *       required:
+ *         - satellite
+ *         - satelliteId
+ *         - filepath
+ *         - aquisition_datetime
+ *       properties:
+ *         _id:
+ *           type: string
+ *           description: Auto-generated MongoDB ID
+ *         filename:
+ *           type: string
+ *           description: Name of the COG file
+ *         satellite:
+ *           type: string
+ *           description: Reference to the satellite ID
+ *         satelliteId:
+ *           type: string
+ *           description: The satellite identifier
+ *         filepath:
+ *           type: string
+ *           description: Path to the COG file
+ *         coverage:
+ *           type: object
+ *           description: Geographic coverage information
+ *         coordinateSystem:
+ *           type: string
+ *           description: Coordinate system used
+ *         size:
+ *           type: object
+ *           description: Size information of the COG
+ *         cornerCoords:
+ *           type: object
+ *           description: Coordinates of the corners
+ *         bands:
+ *           type: array
+ *           description: Array of bands available in the COG
+ *         processingLevel:
+ *           type: string
+ *           description: Processing level of the data (e.g., L1B)
+ *         version:
+ *           type: string
+ *           description: Version of the data
+ *         type:
+ *           type: string
+ *           description: Type of the COG (e.g., VIS, IR)
+ *         revision:
+ *           type: string
+ *           description: Revision information
+ *         aquisition_datetime:
+ *           type: number
+ *           description: Timestamp when the data was acquired
+ */
+
+/**
+ * @swagger
+ * /api/metadata/test-add:
+ *   post:
+ *     summary: Test endpoint to add a product
+ *     tags: [Metadata]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Test add successful
+ *       500:
+ *         description: Server error
+ */
 metadataRouter.post("/test-add", async (req: Request, res: Response) => {
   try {
     const product = new Product(req.body);
@@ -24,6 +101,75 @@ metadataRouter.post("/test-add", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/metadata/save:
+ *   post:
+ *     summary: Save COG metadata
+ *     tags: [Metadata]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - satellite
+ *               - filepath
+ *               - aquisition_datetime
+ *             properties:
+ *               productId:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               satellite:
+ *                 type: string
+ *               aquisition_datetime:
+ *                 type: string
+ *                 format: date-time
+ *               processingLevel:
+ *                 type: string
+ *               version:
+ *                 type: string
+ *               revision:
+ *                 type: string
+ *               filename:
+ *                 type: string
+ *               filepath:
+ *                 type: string
+ *               coverage:
+ *                 type: object
+ *               coordinateSystem:
+ *                 type: string
+ *               size:
+ *                 type: object
+ *               cornerCoords:
+ *                 type: object
+ *               type:
+ *                 type: string
+ *               bands:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *     responses:
+ *       200:
+ *         description: Metadata saved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 cog:
+ *                   $ref: '#/components/schemas/COG'
+ *       400:
+ *         description: Satellite not found
+ *       500:
+ *         description: Server error
+ */
 metadataRouter.post("/save", async (req: Request, res: Response) => {
   try {
     const {
@@ -121,6 +267,29 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/metadata/cog/all:
+ *   get:
+ *     summary: Get all COGs
+ *     tags: [Metadata]
+ *     responses:
+ *       200:
+ *         description: List of all COGs
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 cogs:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/COG'
+ *       500:
+ *         description: Server error
+ */
 metadataRouter.get("/cog/all", async (req: Request, res: Response) => {
   try {
     const cogList = await CogModel.find();
@@ -135,6 +304,36 @@ metadataRouter.get("/cog/all", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/metadata/{satId}/cog/all:
+ *   get:
+ *     summary: Get all COGs for a specific satellite
+ *     tags: [Metadata]
+ *     parameters:
+ *       - in: path
+ *         name: satId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The satellite ID (e.g., 3R)
+ *     responses:
+ *       200:
+ *         description: List of all COGs for the specified satellite
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 cogs:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/COG'
+ *       500:
+ *         description: Server error
+ */
 metadataRouter.get("/:satId/cog/all", async (req: Request, res: Response) => {
   const satId = req.params.satId;
 
@@ -151,6 +350,29 @@ metadataRouter.get("/:satId/cog/all", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/metadata/cog/info/{id}:
+ *   get:
+ *     summary: Get COG information by ID
+ *     tags: [Metadata]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The COG ID
+ *     responses:
+ *       200:
+ *         description: COG details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/COG'
+ *       500:
+ *         description: Server error
+ */
 metadataRouter.get("/cog/info/:id", async (req: Request, res: Response) => {
   try {
     const cog = await CogModel.findById(req.params.id);
@@ -162,6 +384,53 @@ metadataRouter.get("/cog/info/:id", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/metadata/{satId}/cog/range:
+ *   get:
+ *     summary: Get COGs within a time range for a specific satellite
+ *     tags: [Metadata]
+ *     parameters:
+ *       - in: path
+ *         name: satId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The satellite ID (e.g., 3R)
+ *       - in: query
+ *         name: start
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         required: true
+ *         description: Start date/time (ISO format)
+ *       - in: query
+ *         name: end
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         required: true
+ *         description: End date/time (ISO format)
+ *       - in: query
+ *         name: processingLevel
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: Filter by processing level (e.g., L1B)
+ *     responses:
+ *       200:
+ *         description: List of COGs within the specified range
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/COG'
+ *       400:
+ *         description: Start and end time required
+ *       500:
+ *         description: Server error
+ */
 metadataRouter.get("/:satId/cog/range", async (req: Request, res: Response) => {
   try {
     const { start, end, processingLevel } = req.query;
@@ -187,6 +456,46 @@ metadataRouter.get("/:satId/cog/range", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/metadata/{satId}/cog/last:
+ *   get:
+ *     summary: Get the latest COGs for a specific satellite
+ *     tags: [Metadata]
+ *     parameters:
+ *       - in: path
+ *         name: satId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The satellite ID (e.g., 3R)
+ *       - in: query
+ *         name: timestamp
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         required: false
+ *         description: Reference timestamp (ISO format) to get COGs before this time
+ *       - in: query
+ *         name: count
+ *         schema:
+ *           type: integer
+ *         required: false
+ *         description: Number of COGs to return
+ *     responses:
+ *       200:
+ *         description: List of latest COGs
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/COG'
+ *       400:
+ *         description: Invalid frame count
+ *       500:
+ *         description: Server error
+ */
 metadataRouter.get("/:satId/cog/last", async (req: Request, res: Response) => {
   try {
     const { timestamp, count } = req.query;
@@ -208,16 +517,6 @@ metadataRouter.get("/:satId/cog/last", async (req: Request, res: Response) => {
           satelliteId: satId,
         }
       : { satelliteId: satId };
-    // const cogs = await SatelliteModel.findOne({ satelliteId: satId })
-    //   .select("products")
-    //   .populate({
-    //     path: "products",
-    //     populate: {
-    //       path: "cogs",
-    //       match: query,
-    //       options: { limit: limit, sort: { aquisition_datetime: -1 } },
-    //     },
-    //   });
     const cogs = await CogModel.find(query)
       .sort({ aquisition_datetime: -1 })
       .limit(limit);
@@ -228,25 +527,61 @@ metadataRouter.get("/:satId/cog/last", async (req: Request, res: Response) => {
   }
 });
 
-// new applications
 /**
- * Get a specific COG for a satellite
- *
- * Usage:
- * GET /:satId/cog/show
- *
- * Parameters:
- * - satId: Satellite ID in the URL path
- *
- * Query Parameters:
- * - datetime (optional): ISO date string to get the COG from a specific time
- * - type (optional): Filter by COG type
- *
- * Examples:
- * - GET /3R/cog/show                                      - Get latest COG for satellite 3R
- * - GET /3R/cog/show?datetime=2025-04-03T06:47:15.751Z    - Get COG for satellite 3R from specific date
- * - GET /3R/cog/show?type=VIS                             - Get latest thermal type COG for satellite 3R
- * - GET /3R/cog/show?processingLevel=L1B&datetime=2025-04-03T06:47:15.751Z&type=VIS - Get VIS COG for satellite 3R from specific date and processing level
+ * @swagger
+ * /api/metadata/{satId}/cog/show:
+ *   get:
+ *     summary: Get a specific COG for a satellite
+ *     tags: [Metadata]
+ *     parameters:
+ *       - in: path
+ *         name: satId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The satellite ID (e.g., 3R)
+ *       - in: query
+ *         name: datetime
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         required: false
+ *         description: ISO date string to get the COG from a specific time
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: Filter by COG type (e.g., VIS, IR)
+ *       - in: query
+ *         name: processingLevel
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: Filter by processing level (e.g., L1B)
+ *     responses:
+ *       200:
+ *         description: COG details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 cog:
+ *                   $ref: '#/components/schemas/COG'
+ *       404:
+ *         description: COG not found
+ *       500:
+ *         description: Server error
+ *     examples:
+ *       - description: Get latest COG for satellite 3R
+ *         value: /api/metadata/3R/cog/show
+ *       - description: Get COG for satellite 3R from specific date
+ *         value: /api/metadata/3R/cog/show?datetime=2025-04-03T06:47:15.751Z
+ *       - description: Get latest visual type COG for satellite 3R
+ *         value: /api/metadata/3R/cog/show?type=VIS
+ *       - description: Get VIS COG for satellite 3R from specific date and processing level
+ *         value: /api/metadata/3R/cog/show?processingLevel=L1B&datetime=2025-04-03T06:47:15.751Z&type=VIS
  */
 metadataRouter.get("/:satId/cog/show", async (req: Request, res: Response) => {
   try {
@@ -282,17 +617,57 @@ metadataRouter.get("/:satId/cog/show", async (req: Request, res: Response) => {
   }
 });
 
-// get available times from a date
 /**
- * Get available times for a specific satellite
- * - /:satId/cog/available-times
- *
- * Query Parameters:
- * - date (optional): ISO date string to filter available times
- * - processingLevel (optional): Filter by processing level
- *
- * Examples:
- * - GET /3R/cog/available-times?date=2025-04-03&processingLevel=L1B - Get available times for satellite 3R on a specific date with processing level L1B
+ * @swagger
+ * /api/metadata/{satId}/cog/available-times:
+ *   get:
+ *     summary: Get available times for a specific satellite
+ *     tags: [Metadata]
+ *     parameters:
+ *       - in: path
+ *         name: satId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The satellite ID (e.g., 3R)
+ *       - in: query
+ *         name: date
+ *         schema:
+ *           type: string
+ *           format: date
+ *         required: false
+ *         description: ISO date string to filter available times (YYYY-MM-DD)
+ *       - in: query
+ *         name: processingLevel
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: Filter by processing level (e.g., L1B)
+ *     responses:
+ *       200:
+ *         description: Available times for the satellite
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 availableTimes:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       aquisition_datetime:
+ *                         type: number
+ *                         description: Timestamp of acquisition
+ *                       datetime:
+ *                         type: string
+ *                         format: date-time
+ *                         description: ISO formatted date-time
+ *       500:
+ *         description: Server error
+ *     examples:
+ *       - description: Get available times for satellite 3R on a specific date with processing level L1B
+ *         value: /api/metadata/3R/cog/available-times?date=2025-04-03&processingLevel=L1B
  */
 metadataRouter.get(
   "/:satId/cog/available-times",
@@ -341,16 +716,50 @@ metadataRouter.get(
   }
 );
 
-// get available dates
 /**
- * Get available dates for a specific satellite
- * - /:satId/cog/available-dates
- *
- * Query Parameters:
- * - processingLevel (optional): Filter by processing level
- *
- * Examples:
- * - GET /3R/cog/available-dates?processingLevel=L1B - Get available dates for satellite 3R with processing level L1B
+ * @swagger
+ * /api/metadata/{satId}/cog/available-dates:
+ *   get:
+ *     summary: Get available dates for a specific satellite
+ *     tags: [Metadata]
+ *     parameters:
+ *       - in: path
+ *         name: satId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The satellite ID (e.g., 3R)
+ *       - in: query
+ *         name: processingLevel
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: Filter by processing level (e.g., L1B)
+ *     responses:
+ *       200:
+ *         description: Available dates for the satellite
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 availableDates:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       date:
+ *                         type: string
+ *                         format: date
+ *                         description: Date in YYYY-MM-DD format
+ *                       datetime:
+ *                         type: number
+ *                         description: Timestamp corresponding to the date
+ *       500:
+ *         description: Server error
+ *     examples:
+ *       - description: Get available dates for satellite 3R with processing level L1B
+ *         value: /api/metadata/3R/cog/available-dates?processingLevel=L1B
  */
 metadataRouter.get(
   "/:satId/cog/available-dates",
