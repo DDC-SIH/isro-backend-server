@@ -218,11 +218,15 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
     let product = await Product.findOne({
       productId: product_code,
       satelliteId: satellite,
+      processingLevel,
     });
     if (!product) {
       product = new Product({
         product_code,
         satelliteId: satellite,
+        processingLevel,
+        isVisible: true,
+        productId: product_code,
         cogs: [],
       });
       await product.save();
@@ -309,6 +313,7 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
         {
           productId: product_code,
           satelliteId: satellite,
+          processingLevel,
         },
         {
           $addToSet: { cogs: newCog._id },

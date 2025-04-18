@@ -617,4 +617,56 @@ productRouter.post("/batch/set-visibility", async (req: Request, res: Response) 
     }
 });
 
+
+/**
+ * @swagger
+ * /api/product/{productId}/satellite:
+ *   get:
+ *     summary: Get the satellite associated with a product
+ *     tags: [Products]
+ *     parameters:
+ *       - in: path
+ *         name: productId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The product ID
+ *     responses:
+ *       200:
+ *         description: Satellite details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 satelliteId:
+ *                   type: string
+ *                   description: The satellite ID associated with the product
+ *                 satelliteName:
+ *                   type: string
+ *                   description: The name of the satellite
+ */
+
+productRouter.get("/:productId/satellite", async (req: Request, res: Response) => {
+    try {
+        const productId = req.params.productId;
+
+        const product = await Product.findOne({ productId: productId });
+        if (!product) {
+            return res.status(404).json({ message: "Product not found" });
+        }
+        const satellite = await SatelliteModel.findOne({ satelliteId: product.satelliteId });
+        if (!satellite) {
+            return res.status(404).json({ message: "Satellite not found" });
+        }
+        res.status(200).json({
+            satelliteId: satellite.satelliteId,
+            satelliteName: satellite.name
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send("Something went wrong");
+    }
+});
+
 export default productRouter;
