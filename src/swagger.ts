@@ -20,10 +20,10 @@ const swaggerOptions: swaggerJSDoc.Options = {
       },
     },
     servers: [
-      {
-        url: "http://localhost:7000",
-        description: "Development server",
-      },
+      // {
+      //   url: "http://localhost:7000",
+      //   description: "Development server",
+      // },
       {
         url: "http://74.226.242.56:7000",
         description: "Production server",
