@@ -1615,13 +1615,16 @@ metadataRouter.get(
  *                       band:
  *                         type: string
  *                         description: Band name/description
+ *                       type:
+ *                         type: string
+ *                         description: Band name/description
  *                       source:
  *                         type: string
  *                         description: Type of COG this band comes from
  *                       cogId:
  *                         type: string
  *                         description: ID of the COG containing this band
- *                       bandInfo:
+ *                       bands:
  *                         type: object
  *                         description: Additional band information
  *                       aquisition_datetime:
@@ -1693,6 +1696,7 @@ metadataRouter.get(
 
                 bandMap.set(cleanBandName, {
                   band: cleanBandName,
+                  type: cleanBandName,
                   originalName: band.description,
                   source: cog.type,
                   cogId: cog._id,
@@ -1702,7 +1706,7 @@ metadataRouter.get(
                   acquisition_date: convertFromTimestamp(cog.aquisition_datetime),
                   productCode: cog.productCode,
                   size: cog.size,
-                  bandInfo: {
+                  bands: {
                     ...band,
                     description: cleanBandName
                   },
@@ -1711,12 +1715,10 @@ metadataRouter.get(
                   version: cog.version,
                   revision: cog.revision,
                   coordinateSystem: cog.coordinateSystem,
-                  cogMetadata: {
-                    _id: cog._id,
-                    satellite: cog.satellite,
-                    satelliteId: cog.satelliteId,
-                    processingLevel: cog.processingLevel
-                  }
+                  _id: cog._id,
+                  satellite: cog.satellite,
+                  satelliteId: cog.satelliteId,
+                  processingLevel: cog.processingLevel
                 });
               }
             }
@@ -1729,6 +1731,7 @@ metadataRouter.get(
         if (cog.type && cog.type !== 'MULTI' && !bandMap.has(cog.type)) {
           bandMap.set(cog.type, {
             band: cog.type,
+            type: cog.type,
             source: cog.type,
             cogId: cog._id,
             filename: cog.filename,
@@ -1742,13 +1745,11 @@ metadataRouter.get(
             version: cog.version,
             revision: cog.revision,
             coordinateSystem: cog.coordinateSystem,
-            bandInfo: null, // No specific band info for the COG type itself
-            cogMetadata: {
-              _id: cog._id,
-              satellite: cog.satellite,
-              satelliteId: cog.satelliteId,
-              processingLevel: cog.processingLevel
-            }
+            bands: null, // No specific band info for the COG type itself
+            _id: cog._id,
+            satellite: cog.satellite,
+            satelliteId: cog.satelliteId,
+            processingLevel: cog.processingLevel
           });
         }
       });
@@ -1769,6 +1770,237 @@ metadataRouter.get(
   }
 );
 
+/**
+ * @swagger
+ * /api/metadata/{satId}/{processingLevel}/all-bands-with-datetime:
+ *   get:
+ *     summary: Get all available band types for a specific datetime
+ *     tags: [Metadata]
+ *     parameters:
+ *       - in: path
+ *         name: satId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The satellite ID (e.g., 3R)
+ *       - in: path
+ *         name: processingLevel
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The processing level (e.g., L1B)
+ *       - in: query
+ *         name: datetime
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         required: true
+ *         description: ISO date string to get band data from a specific time
+ *       - in: query
+ *         name: productCode
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: Optional filter by product code
+ *       - in: query
+ *         name: showHidden
+ *         schema:
+ *           type: boolean
+ *         required: false
+ *         description: Whether to include bands from hidden products (default is false)
+ *     responses:
+ *       200:
+ *         description: List of all available band types with their data for the specified datetime
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 bandData:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       band:
+ *                         type: string
+ *                         description: Band name/description
+ *                       type:
+ *                         type: string
+ *                         description: Band name/description
+ *                       source:
+ *                         type: string
+ *                         description: Type of COG this band comes from
+ *                       cogId:
+ *                         type: string
+ *                         description: ID of the COG containing this band
+ *                       bands:
+ *                         type: object
+ *                         description: Additional band information
+ *                       aquisition_datetime:
+ *                         type: number
+ *                         description: Acquisition timestamp of the COG
+ *       400:
+ *         description: Datetime parameter is required
+ *       500:
+ *         description: Server error
+ */
+metadataRouter.get(
+  "/:satId/:processingLevel/all-bands-with-datetime",
+  async (req: Request, res: Response) => {
+    try {
+      const satId = req.params.satId;
+      const processingLevel = req.params.processingLevel;
+      const { datetime, productCode } = req.query;
+      const showHidden = req.query.showHidden === 'true';
+
+      // Validate datetime parameter
+      if (!datetime) {
+        return res.status(400).json({ message: "datetime parameter is required" });
+      }
+
+      // Convert datetime string to timestamp
+      const timestamp = new Date(datetime as string).getTime();
+      if (isNaN(timestamp)) {
+        return res.status(400).json({ message: "Invalid datetime format" });
+      }
+
+      // Build base query
+      const query: any = {
+        satelliteId: satId,
+        processingLevel: processingLevel,
+        aquisition_datetime: timestamp
+      };
+
+      // Add product code filter if provided
+      if (productCode) {
+        query.productCode = productCode;
+      }
+
+      // Handle visibility filter
+      if (!showHidden) {
+        // Get visible products for this satellite and processing level
+        const visibleProductQuery: any = {
+          satelliteId: satId,
+          processingLevel: processingLevel,
+          isVisible: true
+        };
+
+        if (productCode) {
+          visibleProductQuery.productId = productCode;
+        }
+
+        const visibleProducts = await Product.find(visibleProductQuery);
+        const visibleProductIds = visibleProducts.map(product => product._id);
+
+        // Add filter for visible products
+        query.product = { $in: visibleProductIds };
+      }
+
+      // Get COGs that match the criteria
+      const cogs = await CogModel.find(query);
+
+      if (cogs.length === 0) {
+        return res.status(200).json({
+          message: `No data found for the specified datetime: ${datetime}`,
+          bandData: []
+        });
+      }
+
+      // Single map to track all bands
+      const bandMap = new Map<string, any>();
+
+      // First collect all band descriptions from all COGs
+      // This takes precedence over COG types
+      cogs.forEach(cog => {
+        if (cog.bands && Array.isArray(cog.bands)) {
+          cog.bands.forEach(band => {
+            if (band.description) {
+              // Remove "IMG_" prefix if it exists
+              const cleanBandName = band.description.replace(/^IMG_/, '');
+
+              // Skip if this band name is already mapped from a non-MULTI source
+              if (!bandMap.has(cleanBandName) ||
+                (bandMap.has(cleanBandName) &&
+                  bandMap.get(cleanBandName).source === 'MULTI' &&
+                  cog.type !== 'MULTI')) {
+
+                bandMap.set(cleanBandName, {
+                  band: cleanBandName,
+                  type: cleanBandName,
+                  originalName: band.description,
+                  source: cog.type,
+                  cogId: cog._id,
+                  filename: cog.filename,
+                  filepath: cog.filepath,
+                  aquisition_datetime: cog.aquisition_datetime,
+                  acquisition_date: convertFromTimestamp(cog.aquisition_datetime),
+                  productCode: cog.productCode,
+                  size: cog.size,
+                  bands: {
+                    ...band,
+                    description: cleanBandName
+                  },
+                  coverage: cog.coverage,
+                  cornerCoords: cog.cornerCoords,
+                  version: cog.version,
+                  revision: cog.revision,
+                  coordinateSystem: cog.coordinateSystem,
+                  _id: cog._id,
+                  satellite: cog.satellite,
+                  satelliteId: cog.satelliteId,
+                  processingLevel: cog.processingLevel
+                });
+              }
+            }
+          });
+        }
+      });
+
+      // Then add COG types only if they don't exist as a band already
+      cogs.forEach(cog => {
+        if (cog.type && cog.type !== 'MULTI' && !bandMap.has(cog.type)) {
+          bandMap.set(cog.type, {
+            band: cog.type,
+            type: cog.type,
+            source: cog.type,
+            cogId: cog._id,
+            filename: cog.filename,
+            filepath: cog.filepath,
+            aquisition_datetime: cog.aquisition_datetime,
+            acquisition_date: convertFromTimestamp(cog.aquisition_datetime),
+            productCode: cog.productCode,
+            size: cog.size,
+            coverage: cog.coverage,
+            cornerCoords: cog.cornerCoords,
+            version: cog.version,
+            revision: cog.revision,
+            coordinateSystem: cog.coordinateSystem,
+            bands: null, // No specific band info for the COG type itself
+            _id: cog._id,
+            satellite: cog.satellite,
+            satelliteId: cog.satelliteId,
+            processingLevel: cog.processingLevel
+          });
+        }
+      });
+
+      // Convert map to array
+      const bandData = Array.from(bandMap.values());
+
+      // Sort by band name
+      bandData.sort((a, b) => a.band.localeCompare(b.band));
+
+      res.status(200).json({
+        bandData,
+        timestamp,
+        datetime: convertFromTimestamp(timestamp)
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).send("Something is wrong");
+    }
+  }
+);
 
 /**
  * @swagger
@@ -2040,10 +2272,10 @@ metadataRouter.get("/time-series", async (req: Request, res: Response) => {
 
       const entry = timeSeriesMap.get(intervalKey);
       entry.count++;
-      
+
       // Store COG ID
       entry.cogIds.push(cog._id);
-      
+
       // Store full COG if populateWithResults is true
       if (populateWithResults === 'true') {
         entry.cogs.push(cog);
@@ -2070,12 +2302,12 @@ metadataRouter.get("/time-series", async (req: Request, res: Response) => {
       .map(entry => {
         // Convert products Map to array
         entry.products = Array.from(entry.products.values());
-        
+
         // If not populating with results, remove the cogs array to save bandwidth
         if (populateWithResults !== 'true') {
           delete entry.cogs;
         }
-        
+
         return entry;
       })
       .sort((a, b) => new Date(a.interval).getTime() - new Date(b.interval).getTime());
