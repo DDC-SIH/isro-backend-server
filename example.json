@@ -1,418 +1,1188 @@
 {
-  "description":"3RIMG_12MAR2025_0945_L1B_V01R00.cog.tif",
-  "driverShortName":"GTiff",
-  "driverLongName":"GeoTIFF",
-  "files":[
-    "3RIMG_12MAR2025_0945_L1B_V01R00.cog.tif"
-  ],
-  "size":[
-    4471,
-    4461
-  ],
-  "coordinateSystem":{
-    "wkt":"GEOGCRS[\"WGS 84\",\n    DATUM[\"World Geodetic System 1984\",\n        ELLIPSOID[\"WGS 84\",6378137,298.257223563,\n            LENGTHUNIT[\"metre\",1]]],\n    PRIMEM[\"Greenwich\",0,\n        ANGLEUNIT[\"degree\",0.0174532925199433]],\n    CS[ellipsoidal,2],\n        AXIS[\"geodetic latitude (Lat)\",north,\n            ORDER[1],\n            ANGLEUNIT[\"degree\",0.0174532925199433]],\n        AXIS[\"geodetic longitude (Lon)\",east,\n            ORDER[2],\n            ANGLEUNIT[\"degree\",0.0174532925199433]],\n    ID[\"EPSG\",4326]]",
-    "dataAxisToSRSAxisMapping":[
-      2,
-      1
-    ]
-  },
-  "geoTransform":[
-    -7.2994767685050164,
-    0.03636,
-    0.0,
-    81.0921175658065323,
-    0.0,
-    -0.03636
-  ],
-  "metadata":{
-    "":{
-      "AREA_OR_POINT":"Area"
-    },
-    "IMAGE_STRUCTURE":{
-      "COMPRESSION":"LZW",
-      "INTERLEAVE":"PIXEL",
-      "LAYOUT":"COG"
-    }
-  },
-  "cornerCoordinates":{
-    "upperLeft":[
-      -7.2994768,
-      81.0921176
+  
+    "bandData": [
+      {
+        "band": "MIR",
+        "originalName": "IMG_MIR",
+        "source": "MULTI",
+        "cogId": "680272109502f1e10d424b8a",
+        "filename": "3RIMG_12FEB2025_2315_L1C_SGP_V01R00.cog.tif",
+        "filepath": "/home/sbn/baivab/final/3RIMG/2025/02/12",
+        "aquisition_datetime": 1739402100000,
+        "acquisition_date": "120220252315",
+        "productCode": "SGP",
+        "size": {
+          "width": 3062,
+          "height": 3207
+        },
+        "bandInfo": {
+          "bandId": 5,
+          "data_type": "float32",
+          "min": 63,
+          "max": 1008,
+          "minimum": 63,
+          "maximum": 1008,
+          "mean": 908.2498779296875,
+          "stdDev": 52.989322662353516,
+          "nodata_value": -999,
+          "description": "MIR"
+        },
+        "coverage": {
+          "lat1": -6413524.59416364,
+          "lat2": 6413524.59416364,
+          "lon1": -6122571.993630046,
+          "lon2": 6122571.993630046
+        },
+        "cornerCoords": {
+          "upperLeft": [
+            -6122571.993630046,
+            6413524.59416364
+          ],
+          "lowerLeft": [
+            -6122571.993630046,
+            -6413524.59416364
+          ],
+          "lowerRight": [
+            6122571.993630046,
+            -6413524.59416364
+          ],
+          "upperRight": [
+            6122571.993630046,
+            6413524.59416364
+          ],
+          "center": [
+            0,
+            0
+          ]
+        },
+        "version": "01",
+        "revision": "00",
+        "coordinateSystem": "PROJCS[\"unknown\",GEOGCS[\"unknown\",DATUM[\"Unknown based on WGS 84 ellipsoid\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]]],PROJECTION[\"Mercator_2SP\"],PARAMETER[\"standard_parallel_1\",0],PARAMETER[\"central_meridian\",75],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH]]",
+        "cogMetadata": {
+          "_id": "680272109502f1e10d424b8a",
+          "satellite": "67ec0a7835982f1fe46f4d7b",
+          "satelliteId": "3R",
+          "processingLevel": "L1C"
+        }
+      },
+      {
+        "band": "MIR_RADIANCE",
+        "originalName": "MIR_RADIANCE",
+        "source": "MULTI",
+        "cogId": "680272109502f1e10d424b8a",
+        "filename": "3RIMG_12FEB2025_2315_L1C_SGP_V01R00.cog.tif",
+        "filepath": "/home/sbn/baivab/final/3RIMG/2025/02/12",
+        "aquisition_datetime": 1739402100000,
+        "acquisition_date": "120220252315",
+        "productCode": "SGP",
+        "size": {
+          "width": 3062,
+          "height": 3207
+        },
+        "bandInfo": {
+          "bandId": 11,
+          "data_type": "float32",
+          "min": 0,
+          "max": 0.32820600271224976,
+          "minimum": 0,
+          "maximum": 0.32820600271224976,
+          "mean": 0.02900048717856407,
+          "stdDev": 0.01875423826277256,
+          "nodata_value": -999,
+          "description": "MIR_RADIANCE"
+        },
+        "coverage": {
+          "lat1": -6413524.59416364,
+          "lat2": 6413524.59416364,
+          "lon1": -6122571.993630046,
+          "lon2": 6122571.993630046
+        },
+        "cornerCoords": {
+          "upperLeft": [
+            -6122571.993630046,
+            6413524.59416364
+          ],
+          "lowerLeft": [
+            -6122571.993630046,
+            -6413524.59416364
+          ],
+          "lowerRight": [
+            6122571.993630046,
+            -6413524.59416364
+          ],
+          "upperRight": [
+            6122571.993630046,
+            6413524.59416364
+          ],
+          "center": [
+            0,
+            0
+          ]
+        },
+        "version": "01",
+        "revision": "00",
+        "coordinateSystem": "PROJCS[\"unknown\",GEOGCS[\"unknown\",DATUM[\"Unknown based on WGS 84 ellipsoid\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]]],PROJECTION[\"Mercator_2SP\"],PARAMETER[\"standard_parallel_1\",0],PARAMETER[\"central_meridian\",75],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH]]",
+        "cogMetadata": {
+          "_id": "680272109502f1e10d424b8a",
+          "satellite": "67ec0a7835982f1fe46f4d7b",
+          "satelliteId": "3R",
+          "processingLevel": "L1C"
+        }
+      },
+      {
+        "band": "MIR_TEMP",
+        "originalName": "MIR_TEMP",
+        "source": "MULTI",
+        "cogId": "680272109502f1e10d424b8a",
+        "filename": "3RIMG_12FEB2025_2315_L1C_SGP_V01R00.cog.tif",
+        "filepath": "/home/sbn/baivab/final/3RIMG/2025/02/12",
+        "aquisition_datetime": 1739402100000,
+        "acquisition_date": "120220252315",
+        "productCode": "SGP",
+        "size": {
+          "width": 3062,
+          "height": 3207
+        },
+        "bandInfo": {
+          "bandId": 15,
+          "data_type": "float32",
+          "min": 179.69302368164062,
+          "max": 339.7874755859375,
+          "minimum": 179.69302368164062,
+          "maximum": 339.7874755859375,
+          "mean": 277.2500305175781,
+          "stdDev": 18.08220100402832,
+          "nodata_value": -999,
+          "description": "MIR_TEMP"
+        },
+        "coverage": {
+          "lat1": -6413524.59416364,
+          "lat2": 6413524.59416364,
+          "lon1": -6122571.993630046,
+          "lon2": 6122571.993630046
+        },
+        "cornerCoords": {
+          "upperLeft": [
+            -6122571.993630046,
+            6413524.59416364
+          ],
+          "lowerLeft": [
+            -6122571.993630046,
+            -6413524.59416364
+          ],
+          "lowerRight": [
+            6122571.993630046,
+            -6413524.59416364
+          ],
+          "upperRight": [
+            6122571.993630046,
+            6413524.59416364
+          ],
+          "center": [
+            0,
+            0
+          ]
+        },
+        "version": "01",
+        "revision": "00",
+        "coordinateSystem": "PROJCS[\"unknown\",GEOGCS[\"unknown\",DATUM[\"Unknown based on WGS 84 ellipsoid\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]]],PROJECTION[\"Mercator_2SP\"],PARAMETER[\"standard_parallel_1\",0],PARAMETER[\"central_meridian\",75],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH]]",
+        "cogMetadata": {
+          "_id": "680272109502f1e10d424b8a",
+          "satellite": "67ec0a7835982f1fe46f4d7b",
+          "satelliteId": "3R",
+          "processingLevel": "L1C"
+        }
+      },
+      {
+        "band": "MULTI",
+        "source": "MULTI",
+        "cogId": "680272109502f1e10d424b8a",
+        "filename": "3RIMG_12FEB2025_2315_L1C_SGP_V01R00.cog.tif",
+        "filepath": "/home/sbn/baivab/final/3RIMG/2025/02/12",
+        "aquisition_datetime": 1739402100000,
+        "acquisition_date": "120220252315",
+        "productCode": "SGP",
+        "size": {
+          "width": 3062,
+          "height": 3207
+        },
+        "coverage": {
+          "lat1": -6413524.59416364,
+          "lat2": 6413524.59416364,
+          "lon1": -6122571.993630046,
+          "lon2": 6122571.993630046
+        },
+        "cornerCoords": {
+          "upperLeft": [
+            -6122571.993630046,
+            6413524.59416364
+          ],
+          "lowerLeft": [
+            -6122571.993630046,
+            -6413524.59416364
+          ],
+          "lowerRight": [
+            6122571.993630046,
+            -6413524.59416364
+          ],
+          "upperRight": [
+            6122571.993630046,
+            6413524.59416364
+          ],
+          "center": [
+            0,
+            0
+          ]
+        },
+        "version": "01",
+        "revision": "00",
+        "coordinateSystem": "PROJCS[\"unknown\",GEOGCS[\"unknown\",DATUM[\"Unknown based on WGS 84 ellipsoid\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]]],PROJECTION[\"Mercator_2SP\"],PARAMETER[\"standard_parallel_1\",0],PARAMETER[\"central_meridian\",75],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH]]",
+        "bandInfo": null,
+        "cogMetadata": {
+          "_id": "680272109502f1e10d424b8a",
+          "satellite": "67ec0a7835982f1fe46f4d7b",
+          "satelliteId": "3R",
+          "processingLevel": "L1C"
+        }
+      },
+      {
+        "band": "SWIR",
+        "source": "SWIR",
+        "cogId": "680270a9dc21026348eb2473",
+        "filename": "3RIMG_12FEB2025_2245_L1C_SGP_IMG_SWIR_V01R00.cog.tif",
+        "filepath": "/home/sbn/baivab/final/3RIMG/2025/02/12",
+        "aquisition_datetime": 1739400300000,
+        "acquisition_date": "120220252245",
+        "productCode": "SGP",
+        "size": {
+          "width": 3062,
+          "height": 3207
+        },
+        "coverage": {
+          "lat1": -6413524.59416364,
+          "lat2": 6413524.59416364,
+          "lon1": -6122571.993630046,
+          "lon2": 6122571.993630046
+        },
+        "cornerCoords": {
+          "upperLeft": [
+            -6122571.993630046,
+            6413524.59416364
+          ],
+          "lowerLeft": [
+            -6122571.993630046,
+            -6413524.59416364
+          ],
+          "lowerRight": [
+            6122571.993630046,
+            -6413524.59416364
+          ],
+          "upperRight": [
+            6122571.993630046,
+            6413524.59416364
+          ],
+          "center": [
+            0,
+            0
+          ]
+        },
+        "version": "01",
+        "revision": "00",
+        "coordinateSystem": "PROJCS[\"unknown\",GEOGCS[\"unknown\",DATUM[\"Unknown based on WGS 84 ellipsoid\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]]],PROJECTION[\"Mercator_2SP\"],PARAMETER[\"standard_parallel_1\",0],PARAMETER[\"central_meridian\",75],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH]]",
+        "bandInfo": null,
+        "cogMetadata": {
+          "_id": "680270a9dc21026348eb2473",
+          "satellite": "67ec0a7835982f1fe46f4d7b",
+          "satelliteId": "3R",
+          "processingLevel": "L1C"
+        }
+      },
+      {
+        "band": "SWIR",
+        "originalName": "IMG_SWIR",
+        "source": "MULTI",
+        "cogId": "680272109502f1e10d424b8a",
+        "filename": "3RIMG_12FEB2025_2315_L1C_SGP_V01R00.cog.tif",
+        "filepath": "/home/sbn/baivab/final/3RIMG/2025/02/12",
+        "aquisition_datetime": 1739402100000,
+        "acquisition_date": "120220252315",
+        "productCode": "SGP",
+        "size": {
+          "width": 3062,
+          "height": 3207
+        },
+        "bandInfo": {
+          "bandId": 2,
+          "data_type": "float32",
+          "min": -999,
+          "max": 1023,
+          "minimum": -999,
+          "maximum": 1023,
+          "mean": 55.948448181152344,
+          "stdDev": 85.89425659179688,
+          "nodata_value": -999,
+          "description": "SWIR"
+        },
+        "coverage": {
+          "lat1": -6413524.59416364,
+          "lat2": 6413524.59416364,
+          "lon1": -6122571.993630046,
+          "lon2": 6122571.993630046
+        },
+        "cornerCoords": {
+          "upperLeft": [
+            -6122571.993630046,
+            6413524.59416364
+          ],
+          "lowerLeft": [
+            -6122571.993630046,
+            -6413524.59416364
+          ],
+          "lowerRight": [
+            6122571.993630046,
+            -6413524.59416364
+          ],
+          "upperRight": [
+            6122571.993630046,
+            6413524.59416364
+          ],
+          "center": [
+            0,
+            0
+          ]
+        },
+        "version": "01",
+        "revision": "00",
+        "coordinateSystem": "PROJCS[\"unknown\",GEOGCS[\"unknown\",DATUM[\"Unknown based on WGS 84 ellipsoid\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]]],PROJECTION[\"Mercator_2SP\"],PARAMETER[\"standard_parallel_1\",0],PARAMETER[\"central_meridian\",75],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH]]",
+        "cogMetadata": {
+          "_id": "680272109502f1e10d424b8a",
+          "satellite": "67ec0a7835982f1fe46f4d7b",
+          "satelliteId": "3R",
+          "processingLevel": "L1C"
+        }
+      },
+      {
+        "band": "SWIR_RADIANCE",
+        "originalName": "SWIR_RADIANCE",
+        "source": "MULTI",
+        "cogId": "680272109502f1e10d424b8a",
+        "filename": "3RIMG_12FEB2025_2315_L1C_SGP_V01R00.cog.tif",
+        "filepath": "/home/sbn/baivab/final/3RIMG/2025/02/12",
+        "aquisition_datetime": 1739402100000,
+        "acquisition_date": "120220252315",
+        "productCode": "SGP",
+        "size": {
+          "width": 3062,
+          "height": 3207
+        },
+        "bandInfo": {
+          "bandId": 8,
+          "data_type": "float32",
+          "min": -999,
+          "max": 6.699999809265137,
+          "minimum": -999,
+          "maximum": 6.699999809265137,
+          "mean": 0.2951059937477112,
+          "stdDev": 1.0840556621551514,
+          "nodata_value": -999,
+          "description": "SWIR_RADIANCE"
+        },
+        "coverage": {
+          "lat1": -6413524.59416364,
+          "lat2": 6413524.59416364,
+          "lon1": -6122571.993630046,
+          "lon2": 6122571.993630046
+        },
+        "cornerCoords": {
+          "upperLeft": [
+            -6122571.993630046,
+            6413524.59416364
+          ],
+          "lowerLeft": [
+            -6122571.993630046,
+            -6413524.59416364
+          ],
+          "lowerRight": [
+            6122571.993630046,
+            -6413524.59416364
+          ],
+          "upperRight": [
+            6122571.993630046,
+            6413524.59416364
+          ],
+          "center": [
+            0,
+            0
+          ]
+        },
+        "version": "01",
+        "revision": "00",
+        "coordinateSystem": "PROJCS[\"unknown\",GEOGCS[\"unknown\",DATUM[\"Unknown based on WGS 84 ellipsoid\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]]],PROJECTION[\"Mercator_2SP\"],PARAMETER[\"standard_parallel_1\",0],PARAMETER[\"central_meridian\",75],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH]]",
+        "cogMetadata": {
+          "_id": "680272109502f1e10d424b8a",
+          "satellite": "67ec0a7835982f1fe46f4d7b",
+          "satelliteId": "3R",
+          "processingLevel": "L1C"
+        }
+      },
+      {
+        "band": "TIR1",
+        "originalName": "IMG_TIR1",
+        "source": "MULTI",
+        "cogId": "680272109502f1e10d424b8a",
+        "filename": "3RIMG_12FEB2025_2315_L1C_SGP_V01R00.cog.tif",
+        "filepath": "/home/sbn/baivab/final/3RIMG/2025/02/12",
+        "aquisition_datetime": 1739402100000,
+        "acquisition_date": "120220252315",
+        "productCode": "SGP",
+        "size": {
+          "width": 3062,
+          "height": 3207
+        },
+        "bandInfo": {
+          "bandId": 3,
+          "data_type": "float32",
+          "min": 495,
+          "max": 958,
+          "minimum": 495,
+          "maximum": 958,
+          "mean": 672.3766479492188,
+          "stdDev": 98.81654357910156,
+          "nodata_value": -999,
+          "description": "TIR1"
+        },
+        "coverage": {
+          "lat1": -6413524.59416364,
+          "lat2": 6413524.59416364,
+          "lon1": -6122571.993630046,
+          "lon2": 6122571.993630046
+        },
+        "cornerCoords": {
+          "upperLeft": [
+            -6122571.993630046,
+            6413524.59416364
+          ],
+          "lowerLeft": [
+            -6122571.993630046,
+            -6413524.59416364
+          ],
+          "lowerRight": [
+            6122571.993630046,
+            -6413524.59416364
+          ],
+          "upperRight": [
+            6122571.993630046,
+            6413524.59416364
+          ],
+          "center": [
+            0,
+            0
+          ]
+        },
+        "version": "01",
+        "revision": "00",
+        "coordinateSystem": "PROJCS[\"unknown\",GEOGCS[\"unknown\",DATUM[\"Unknown based on WGS 84 ellipsoid\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]]],PROJECTION[\"Mercator_2SP\"],PARAMETER[\"standard_parallel_1\",0],PARAMETER[\"central_meridian\",75],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH]]",
+        "cogMetadata": {
+          "_id": "680272109502f1e10d424b8a",
+          "satellite": "67ec0a7835982f1fe46f4d7b",
+          "satelliteId": "3R",
+          "processingLevel": "L1C"
+        }
+      },
+      {
+        "band": "TIR1_RADIANCE",
+        "originalName": "TIR1_RADIANCE",
+        "source": "MULTI",
+        "cogId": "680272109502f1e10d424b8a",
+        "filename": "3RIMG_12FEB2025_2315_L1C_SGP_V01R00.cog.tif",
+        "filepath": "/home/sbn/baivab/final/3RIMG/2025/02/12",
+        "aquisition_datetime": 1739402100000,
+        "acquisition_date": "120220252315",
+        "productCode": "SGP",
+        "size": {
+          "width": 3062,
+          "height": 3207
+        },
+        "bandInfo": {
+          "bandId": 9,
+          "data_type": "float32",
+          "min": 0,
+          "max": 0.9518719911575317,
+          "minimum": 0,
+          "maximum": 0.9518719911575317,
+          "mean": 0.6065381765365601,
+          "stdDev": 0.2012372761964798,
+          "nodata_value": -999,
+          "description": "TIR1_RADIANCE"
+        },
+        "coverage": {
+          "lat1": -6413524.59416364,
+          "lat2": 6413524.59416364,
+          "lon1": -6122571.993630046,
+          "lon2": 6122571.993630046
+        },
+        "cornerCoords": {
+          "upperLeft": [
+            -6122571.993630046,
+            6413524.59416364
+          ],
+          "lowerLeft": [
+            -6122571.993630046,
+            -6413524.59416364
+          ],
+          "lowerRight": [
+            6122571.993630046,
+            -6413524.59416364
+          ],
+          "upperRight": [
+            6122571.993630046,
+            6413524.59416364
+          ],
+          "center": [
+            0,
+            0
+          ]
+        },
+        "version": "01",
+        "revision": "00",
+        "coordinateSystem": "PROJCS[\"unknown\",GEOGCS[\"unknown\",DATUM[\"Unknown based on WGS 84 ellipsoid\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]]],PROJECTION[\"Mercator_2SP\"],PARAMETER[\"standard_parallel_1\",0],PARAMETER[\"central_meridian\",75],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH]]",
+        "cogMetadata": {
+          "_id": "680272109502f1e10d424b8a",
+          "satellite": "67ec0a7835982f1fe46f4d7b",
+          "satelliteId": "3R",
+          "processingLevel": "L1C"
+        }
+      },
+      {
+        "band": "TIR1_TEMP",
+        "originalName": "TIR1_TEMP",
+        "source": "MULTI",
+        "cogId": "680272109502f1e10d424b8a",
+        "filename": "3RIMG_12FEB2025_2315_L1C_SGP_V01R00.cog.tif",
+        "filepath": "/home/sbn/baivab/final/3RIMG/2025/02/12",
+        "aquisition_datetime": 1739402100000,
+        "acquisition_date": "120220252315",
+        "productCode": "SGP",
+        "size": {
+          "width": 3062,
+          "height": 3207
+        },
+        "bandInfo": {
+          "bandId": 13,
+          "data_type": "float32",
+          "min": 179.85948181152344,
+          "max": 298.9164733886719,
+          "minimum": 179.85948181152344,
+          "maximum": 298.9164733886719,
+          "mean": 269.4091491699219,
+          "stdDev": 20.618581771850586,
+          "nodata_value": -999,
+          "description": "TIR1_TEMP"
+        },
+        "coverage": {
+          "lat1": -6413524.59416364,
+          "lat2": 6413524.59416364,
+          "lon1": -6122571.993630046,
+          "lon2": 6122571.993630046
+        },
+        "cornerCoords": {
+          "upperLeft": [
+            -6122571.993630046,
+            6413524.59416364
+          ],
+          "lowerLeft": [
+            -6122571.993630046,
+            -6413524.59416364
+          ],
+          "lowerRight": [
+            6122571.993630046,
+            -6413524.59416364
+          ],
+          "upperRight": [
+            6122571.993630046,
+            6413524.59416364
+          ],
+          "center": [
+            0,
+            0
+          ]
+        },
+        "version": "01",
+        "revision": "00",
+        "coordinateSystem": "PROJCS[\"unknown\",GEOGCS[\"unknown\",DATUM[\"Unknown based on WGS 84 ellipsoid\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]]],PROJECTION[\"Mercator_2SP\"],PARAMETER[\"standard_parallel_1\",0],PARAMETER[\"central_meridian\",75],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH]]",
+        "cogMetadata": {
+          "_id": "680272109502f1e10d424b8a",
+          "satellite": "67ec0a7835982f1fe46f4d7b",
+          "satelliteId": "3R",
+          "processingLevel": "L1C"
+        }
+      },
+      {
+        "band": "TIR2",
+        "originalName": "IMG_TIR2",
+        "source": "MULTI",
+        "cogId": "680272109502f1e10d424b8a",
+        "filename": "3RIMG_12FEB2025_2315_L1C_SGP_V01R00.cog.tif",
+        "filepath": "/home/sbn/baivab/final/3RIMG/2025/02/12",
+        "aquisition_datetime": 1739402100000,
+        "acquisition_date": "120220252315",
+        "productCode": "SGP",
+        "size": {
+          "width": 3062,
+          "height": 3207
+        },
+        "bandInfo": {
+          "bandId": 4,
+          "data_type": "float32",
+          "min": 525,
+          "max": 955,
+          "minimum": 525,
+          "maximum": 955,
+          "mean": 684.439453125,
+          "stdDev": 87.06119537353516,
+          "nodata_value": -999,
+          "description": "TIR2"
+        },
+        "coverage": {
+          "lat1": -6413524.59416364,
+          "lat2": 6413524.59416364,
+          "lon1": -6122571.993630046,
+          "lon2": 6122571.993630046
+        },
+        "cornerCoords": {
+          "upperLeft": [
+            -6122571.993630046,
+            6413524.59416364
+          ],
+          "lowerLeft": [
+            -6122571.993630046,
+            -6413524.59416364
+          ],
+          "lowerRight": [
+            6122571.993630046,
+            -6413524.59416364
+          ],
+          "upperRight": [
+            6122571.993630046,
+            6413524.59416364
+          ],
+          "center": [
+            0,
+            0
+          ]
+        },
+        "version": "01",
+        "revision": "00",
+        "coordinateSystem": "PROJCS[\"unknown\",GEOGCS[\"unknown\",DATUM[\"Unknown based on WGS 84 ellipsoid\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]]],PROJECTION[\"Mercator_2SP\"],PARAMETER[\"standard_parallel_1\",0],PARAMETER[\"central_meridian\",75],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH]]",
+        "cogMetadata": {
+          "_id": "680272109502f1e10d424b8a",
+          "satellite": "67ec0a7835982f1fe46f4d7b",
+          "satelliteId": "3R",
+          "processingLevel": "L1C"
+        }
+      },
+      {
+        "band": "TIR2_RADIANCE",
+        "originalName": "TIR2_RADIANCE",
+        "source": "MULTI",
+        "cogId": "680272109502f1e10d424b8a",
+        "filename": "3RIMG_12FEB2025_2315_L1C_SGP_V01R00.cog.tif",
+        "filepath": "/home/sbn/baivab/final/3RIMG/2025/02/12",
+        "aquisition_datetime": 1739402100000,
+        "acquisition_date": "120220252315",
+        "productCode": "SGP",
+        "size": {
+          "width": 3062,
+          "height": 3207
+        },
+        "bandInfo": {
+          "bandId": 10,
+          "data_type": "float32",
+          "min": 0,
+          "max": 0.862982988357544,
+          "minimum": 0,
+          "maximum": 0.862982988357544,
+          "mean": 0.5643379092216492,
+          "stdDev": 0.17132440209388733,
+          "nodata_value": -999,
+          "description": "TIR2_RADIANCE"
+        },
+        "coverage": {
+          "lat1": -6413524.59416364,
+          "lat2": 6413524.59416364,
+          "lon1": -6122571.993630046,
+          "lon2": 6122571.993630046
+        },
+        "cornerCoords": {
+          "upperLeft": [
+            -6122571.993630046,
+            6413524.59416364
+          ],
+          "lowerLeft": [
+            -6122571.993630046,
+            -6413524.59416364
+          ],
+          "lowerRight": [
+            6122571.993630046,
+            -6413524.59416364
+          ],
+          "upperRight": [
+            6122571.993630046,
+            6413524.59416364
+          ],
+          "center": [
+            0,
+            0
+          ]
+        },
+        "version": "01",
+        "revision": "00",
+        "coordinateSystem": "PROJCS[\"unknown\",GEOGCS[\"unknown\",DATUM[\"Unknown based on WGS 84 ellipsoid\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]]],PROJECTION[\"Mercator_2SP\"],PARAMETER[\"standard_parallel_1\",0],PARAMETER[\"central_meridian\",75],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH]]",
+        "cogMetadata": {
+          "_id": "680272109502f1e10d424b8a",
+          "satellite": "67ec0a7835982f1fe46f4d7b",
+          "satelliteId": "3R",
+          "processingLevel": "L1C"
+        }
+      },
+      {
+        "band": "TIR2_TEMP",
+        "originalName": "TIR2_TEMP",
+        "source": "MULTI",
+        "cogId": "680272109502f1e10d424b8a",
+        "filename": "3RIMG_12FEB2025_2315_L1C_SGP_V01R00.cog.tif",
+        "filepath": "/home/sbn/baivab/final/3RIMG/2025/02/12",
+        "aquisition_datetime": 1739402100000,
+        "acquisition_date": "120220252315",
+        "productCode": "SGP",
+        "size": {
+          "width": 3062,
+          "height": 3207
+        },
+        "bandInfo": {
+          "bandId": 14,
+          "data_type": "float32",
+          "min": 179.92617797851562,
+          "max": 297.0936584472656,
+          "minimum": 179.92617797851562,
+          "maximum": 297.0936584472656,
+          "mean": 267.2774963378906,
+          "stdDev": 20.226360321044922,
+          "nodata_value": -999,
+          "description": "TIR2_TEMP"
+        },
+        "coverage": {
+          "lat1": -6413524.59416364,
+          "lat2": 6413524.59416364,
+          "lon1": -6122571.993630046,
+          "lon2": 6122571.993630046
+        },
+        "cornerCoords": {
+          "upperLeft": [
+            -6122571.993630046,
+            6413524.59416364
+          ],
+          "lowerLeft": [
+            -6122571.993630046,
+            -6413524.59416364
+          ],
+          "lowerRight": [
+            6122571.993630046,
+            -6413524.59416364
+          ],
+          "upperRight": [
+            6122571.993630046,
+            6413524.59416364
+          ],
+          "center": [
+            0,
+            0
+          ]
+        },
+        "version": "01",
+        "revision": "00",
+        "coordinateSystem": "PROJCS[\"unknown\",GEOGCS[\"unknown\",DATUM[\"Unknown based on WGS 84 ellipsoid\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]]],PROJECTION[\"Mercator_2SP\"],PARAMETER[\"standard_parallel_1\",0],PARAMETER[\"central_meridian\",75],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH]]",
+        "cogMetadata": {
+          "_id": "680272109502f1e10d424b8a",
+          "satellite": "67ec0a7835982f1fe46f4d7b",
+          "satelliteId": "3R",
+          "processingLevel": "L1C"
+        }
+      },
+      {
+        "band": "VIS",
+        "source": "VIS",
+        "cogId": "6802718adc21026348eb247f",
+        "filename": "3RIMG_12FEB2025_2315_L1C_SGP_IMG_VIS_V01R00.cog.tif",
+        "filepath": "/home/sbn/baivab/final/3RIMG/2025/02/12",
+        "aquisition_datetime": 1739402100000,
+        "acquisition_date": "120220252315",
+        "productCode": "SGP",
+        "size": {
+          "width": 3062,
+          "height": 3207
+        },
+        "coverage": {
+          "lat1": -6413524.59416364,
+          "lat2": 6413524.59416364,
+          "lon1": -6122571.993630046,
+          "lon2": 6122571.993630046
+        },
+        "cornerCoords": {
+          "upperLeft": [
+            -6122571.993630046,
+            6413524.59416364
+          ],
+          "lowerLeft": [
+            -6122571.993630046,
+            -6413524.59416364
+          ],
+          "lowerRight": [
+            6122571.993630046,
+            -6413524.59416364
+          ],
+          "upperRight": [
+            6122571.993630046,
+            6413524.59416364
+          ],
+          "center": [
+            0,
+            0
+          ]
+        },
+        "version": "01",
+        "revision": "00",
+        "coordinateSystem": "PROJCS[\"unknown\",GEOGCS[\"unknown\",DATUM[\"Unknown based on WGS 84 ellipsoid\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]]],PROJECTION[\"Mercator_2SP\"],PARAMETER[\"standard_parallel_1\",0],PARAMETER[\"central_meridian\",75],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH]]",
+        "bandInfo": null,
+        "cogMetadata": {
+          "_id": "6802718adc21026348eb247f",
+          "satellite": "67ec0a7835982f1fe46f4d7b",
+          "satelliteId": "3R",
+          "processingLevel": "L1C"
+        }
+      },
+      {
+        "band": "VIS",
+        "originalName": "IMG_VIS",
+        "source": "MULTI",
+        "cogId": "680272109502f1e10d424b8a",
+        "filename": "3RIMG_12FEB2025_2315_L1C_SGP_V01R00.cog.tif",
+        "filepath": "/home/sbn/baivab/final/3RIMG/2025/02/12",
+        "aquisition_datetime": 1739402100000,
+        "acquisition_date": "120220252315",
+        "productCode": "SGP",
+        "size": {
+          "width": 3062,
+          "height": 3207
+        },
+        "bandInfo": {
+          "bandId": 1,
+          "data_type": "float32",
+          "min": 19,
+          "max": 901,
+          "minimum": 19,
+          "maximum": 901,
+          "mean": 58.06842803955078,
+          "stdDev": 49.33732604980469,
+          "nodata_value": -999,
+          "description": "VIS"
+        },
+        "coverage": {
+          "lat1": -6413524.59416364,
+          "lat2": 6413524.59416364,
+          "lon1": -6122571.993630046,
+          "lon2": 6122571.993630046
+        },
+        "cornerCoords": {
+          "upperLeft": [
+            -6122571.993630046,
+            6413524.59416364
+          ],
+          "lowerLeft": [
+            -6122571.993630046,
+            -6413524.59416364
+          ],
+          "lowerRight": [
+            6122571.993630046,
+            -6413524.59416364
+          ],
+          "upperRight": [
+            6122571.993630046,
+            6413524.59416364
+          ],
+          "center": [
+            0,
+            0
+          ]
+        },
+        "version": "01",
+        "revision": "00",
+        "coordinateSystem": "PROJCS[\"unknown\",GEOGCS[\"unknown\",DATUM[\"Unknown based on WGS 84 ellipsoid\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]]],PROJECTION[\"Mercator_2SP\"],PARAMETER[\"standard_parallel_1\",0],PARAMETER[\"central_meridian\",75],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH]]",
+        "cogMetadata": {
+          "_id": "680272109502f1e10d424b8a",
+          "satellite": "67ec0a7835982f1fe46f4d7b",
+          "satelliteId": "3R",
+          "processingLevel": "L1C"
+        }
+      },
+      {
+        "band": "VIS_RADIANCE",
+        "originalName": "VIS_RADIANCE",
+        "source": "MULTI",
+        "cogId": "680272109502f1e10d424b8a",
+        "filename": "3RIMG_12FEB2025_2315_L1C_SGP_V01R00.cog.tif",
+        "filepath": "/home/sbn/baivab/final/3RIMG/2025/02/12",
+        "aquisition_datetime": 1739402100000,
+        "acquisition_date": "120220252315",
+        "productCode": "SGP",
+        "size": {
+          "width": 3062,
+          "height": 3207
+        },
+        "bandInfo": {
+          "bandId": 7,
+          "data_type": "float32",
+          "min": 0,
+          "max": 52.400001525878906,
+          "minimum": 0,
+          "maximum": 52.400001525878906,
+          "mean": 1.5576765537261963,
+          "stdDev": 3.774510145187378,
+          "nodata_value": -999,
+          "description": "VIS_RADIANCE"
+        },
+        "coverage": {
+          "lat1": -6413524.59416364,
+          "lat2": 6413524.59416364,
+          "lon1": -6122571.993630046,
+          "lon2": 6122571.993630046
+        },
+        "cornerCoords": {
+          "upperLeft": [
+            -6122571.993630046,
+            6413524.59416364
+          ],
+          "lowerLeft": [
+            -6122571.993630046,
+            -6413524.59416364
+          ],
+          "lowerRight": [
+            6122571.993630046,
+            -6413524.59416364
+          ],
+          "upperRight": [
+            6122571.993630046,
+            6413524.59416364
+          ],
+          "center": [
+            0,
+            0
+          ]
+        },
+        "version": "01",
+        "revision": "00",
+        "coordinateSystem": "PROJCS[\"unknown\",GEOGCS[\"unknown\",DATUM[\"Unknown based on WGS 84 ellipsoid\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]]],PROJECTION[\"Mercator_2SP\"],PARAMETER[\"standard_parallel_1\",0],PARAMETER[\"central_meridian\",75],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH]]",
+        "cogMetadata": {
+          "_id": "680272109502f1e10d424b8a",
+          "satellite": "67ec0a7835982f1fe46f4d7b",
+          "satelliteId": "3R",
+          "processingLevel": "L1C"
+        }
+      },
+      {
+        "band": "WV",
+        "originalName": "IMG_WV",
+        "source": "MULTI",
+        "cogId": "680272109502f1e10d424b8a",
+        "filename": "3RIMG_12FEB2025_2315_L1C_SGP_V01R00.cog.tif",
+        "filepath": "/home/sbn/baivab/final/3RIMG/2025/02/12",
+        "aquisition_datetime": 1739402100000,
+        "acquisition_date": "120220252315",
+        "productCode": "SGP",
+        "size": {
+          "width": 3062,
+          "height": 3207
+        },
+        "bandInfo": {
+          "bandId": 6,
+          "data_type": "float32",
+          "min": 817,
+          "max": 1002,
+          "minimum": 817,
+          "maximum": 1002,
+          "mean": 909.3958740234375,
+          "stdDev": 31.534488677978516,
+          "nodata_value": -999,
+          "description": "WV"
+        },
+        "coverage": {
+          "lat1": -6413524.59416364,
+          "lat2": 6413524.59416364,
+          "lon1": -6122571.993630046,
+          "lon2": 6122571.993630046
+        },
+        "cornerCoords": {
+          "upperLeft": [
+            -6122571.993630046,
+            6413524.59416364
+          ],
+          "lowerLeft": [
+            -6122571.993630046,
+            -6413524.59416364
+          ],
+          "lowerRight": [
+            6122571.993630046,
+            -6413524.59416364
+          ],
+          "upperRight": [
+            6122571.993630046,
+            6413524.59416364
+          ],
+          "center": [
+            0,
+            0
+          ]
+        },
+        "version": "01",
+        "revision": "00",
+        "coordinateSystem": "PROJCS[\"unknown\",GEOGCS[\"unknown\",DATUM[\"Unknown based on WGS 84 ellipsoid\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]]],PROJECTION[\"Mercator_2SP\"],PARAMETER[\"standard_parallel_1\",0],PARAMETER[\"central_meridian\",75],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH]]",
+        "cogMetadata": {
+          "_id": "680272109502f1e10d424b8a",
+          "satellite": "67ec0a7835982f1fe46f4d7b",
+          "satelliteId": "3R",
+          "processingLevel": "L1C"
+        }
+      },
+      {
+        "band": "WV_RADIANCE",
+        "originalName": "WV_RADIANCE",
+        "source": "MULTI",
+        "cogId": "680272109502f1e10d424b8a",
+        "filename": "3RIMG_12FEB2025_2315_L1C_SGP_V01R00.cog.tif",
+        "filepath": "/home/sbn/baivab/final/3RIMG/2025/02/12",
+        "aquisition_datetime": 1739402100000,
+        "acquisition_date": "120220252315",
+        "productCode": "SGP",
+        "size": {
+          "width": 3062,
+          "height": 3207
+        },
+        "bandInfo": {
+          "bandId": 12,
+          "data_type": "float32",
+          "min": 0,
+          "max": 0.2804110050201416,
+          "minimum": 0,
+          "maximum": 0.2804110050201416,
+          "mean": 0.13957040011882782,
+          "stdDev": 0.04869367182254791,
+          "nodata_value": -999,
+          "description": "WV_RADIANCE"
+        },
+        "coverage": {
+          "lat1": -6413524.59416364,
+          "lat2": 6413524.59416364,
+          "lon1": -6122571.993630046,
+          "lon2": 6122571.993630046
+        },
+        "cornerCoords": {
+          "upperLeft": [
+            -6122571.993630046,
+            6413524.59416364
+          ],
+          "lowerLeft": [
+            -6122571.993630046,
+            -6413524.59416364
+          ],
+          "lowerRight": [
+            6122571.993630046,
+            -6413524.59416364
+          ],
+          "upperRight": [
+            6122571.993630046,
+            6413524.59416364
+          ],
+          "center": [
+            0,
+            0
+          ]
+        },
+        "version": "01",
+        "revision": "00",
+        "coordinateSystem": "PROJCS[\"unknown\",GEOGCS[\"unknown\",DATUM[\"Unknown based on WGS 84 ellipsoid\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]]],PROJECTION[\"Mercator_2SP\"],PARAMETER[\"standard_parallel_1\",0],PARAMETER[\"central_meridian\",75],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH]]",
+        "cogMetadata": {
+          "_id": "680272109502f1e10d424b8a",
+          "satellite": "67ec0a7835982f1fe46f4d7b",
+          "satelliteId": "3R",
+          "processingLevel": "L1C"
+        }
+      },
+      {
+        "band": "WV_TEMP",
+        "originalName": "WV_TEMP",
+        "source": "MULTI",
+        "cogId": "680272109502f1e10d424b8a",
+        "filename": "3RIMG_12FEB2025_2315_L1C_SGP_V01R00.cog.tif",
+        "filepath": "/home/sbn/baivab/final/3RIMG/2025/02/12",
+        "aquisition_datetime": 1739402100000,
+        "acquisition_date": "120220252315",
+        "productCode": "SGP",
+        "size": {
+          "width": 3062,
+          "height": 3207
+        },
+        "bandInfo": {
+          "bandId": 16,
+          "data_type": "float32",
+          "min": 179.68826293945312,
+          "max": 263.98388671875,
+          "minimum": 179.68826293945312,
+          "maximum": 263.98388671875,
+          "mean": 241.13113403320312,
+          "stdDev": 10.653416633605957,
+          "nodata_value": -999,
+          "description": "WV_TEMP"
+        },
+        "coverage": {
+          "lat1": -6413524.59416364,
+          "lat2": 6413524.59416364,
+          "lon1": -6122571.993630046,
+          "lon2": 6122571.993630046
+        },
+        "cornerCoords": {
+          "upperLeft": [
+            -6122571.993630046,
+            6413524.59416364
+          ],
+          "lowerLeft": [
+            -6122571.993630046,
+            -6413524.59416364
+          ],
+          "lowerRight": [
+            6122571.993630046,
+            -6413524.59416364
+          ],
+          "upperRight": [
+            6122571.993630046,
+            6413524.59416364
+          ],
+          "center": [
+            0,
+            0
+          ]
+        },
+        "version": "01",
+        "revision": "00",
+        "coordinateSystem": "PROJCS[\"unknown\",GEOGCS[\"unknown\",DATUM[\"Unknown based on WGS 84 ellipsoid\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]]],PROJECTION[\"Mercator_2SP\"],PARAMETER[\"standard_parallel_1\",0],PARAMETER[\"central_meridian\",75],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH]]",
+        "cogMetadata": {
+          "_id": "680272109502f1e10d424b8a",
+          "satellite": "67ec0a7835982f1fe46f4d7b",
+          "satelliteId": "3R",
+          "processingLevel": "L1C"
+        }
+      }
     ],
-    "lowerLeft":[
-      -7.2994768,
-      -81.1098424
-    ],
-    "lowerRight":[
-      155.2660832,
-      -81.1098424
-    ],
-    "upperRight":[
-      155.2660832,
-      81.0921176
-    ],
-    "center":[
-      73.9833032,
-      -0.0088624
-    ]
-  },
-  "wgs84Extent":{
-    "type":"Polygon",
-    "coordinates":[
-      [
-        [
-          -7.2994768,
-          81.0921176
-        ],
-        [
-          -7.2994768,
-          -81.1098424
-        ],
-        [
-          155.2660832,
-          -81.1098424
-        ],
-        [
-          155.2660832,
-          81.0921176
-        ],
-        [
-          -7.2994768,
-          81.0921176
-        ]
-      ]
-    ]
-  },
-  "bands":[
-    {
-      "band":1,
-      "block":[
-        512,
-        512
-      ],
-      "type":"UInt16",
-      "colorInterpretation":"Gray",
-      "min":21.0,
-      "max":1023.0,
-      "minimum":21.0,
-      "maximum":1023.0,
-      "mean":119.252,
-      "stdDev":73.174,
-      "noDataValue":1023.0,
-      "overviews":[
-        {
-          "size":[
-            2235,
-            2230
-          ]
-        },
-        {
-          "size":[
-            1117,
-            1115
-          ]
-        },
-        {
-          "size":[
-            558,
-            557
-          ]
-        },
-        {
-          "size":[
-            279,
-            278
-          ]
-        }
-      ],
-      "metadata":{
-        "":{
-          "MAX":"1023",
-          "MEAN":"119.25229230049048",
-          "MIN":"21",
-          "MODE":"59",
-          "STATISTICS_MAXIMUM":"1023",
-          "STATISTICS_MEAN":"119.25229230049",
-          "STATISTICS_MINIMUM":"21",
-          "STATISTICS_STDDEV":"73.173825368342",
-          "STD_DEV":"73.17382536834216"
-        }
-      }
-    },
-    {
-      "band":2,
-      "block":[
-        512,
-        512
-      ],
-      "type":"UInt16",
-      "colorInterpretation":"Undefined",
-      "min":1.0,
-      "max":1023.0,
-      "minimum":1.0,
-      "maximum":1023.0,
-      "mean":136.093,
-      "stdDev":114.139,
-      "noDataValue":1023.0,
-      "overviews":[
-        {
-          "size":[
-            2235,
-            2230
-          ]
-        },
-        {
-          "size":[
-            1117,
-            1115
-          ]
-        },
-        {
-          "size":[
-            558,
-            557
-          ]
-        },
-        {
-          "size":[
-            279,
-            278
-          ]
-        }
-      ],
-      "metadata":{
-        "":{
-          "MAX":"1023",
-          "MEAN":"136.0934517647088",
-          "MIN":"1",
-          "MODE":"20",
-          "STATISTICS_MAXIMUM":"1023",
-          "STATISTICS_MEAN":"136.09345176471",
-          "STATISTICS_MINIMUM":"1",
-          "STATISTICS_STDDEV":"114.13913719385",
-          "STD_DEV":"114.13913719385079"
-        }
-      }
-    },
-    {
-      "band":3,
-      "block":[
-        512,
-        512
-      ],
-      "type":"UInt16",
-      "colorInterpretation":"Undefined",
-      "min":229.0,
-      "max":957.0,
-      "minimum":229.0,
-      "maximum":957.0,
-      "mean":610.569,
-      "stdDev":134.952,
-      "noDataValue":1023.0,
-      "overviews":[
-        {
-          "size":[
-            2235,
-            2230
-          ]
-        },
-        {
-          "size":[
-            1117,
-            1115
-          ]
-        },
-        {
-          "size":[
-            558,
-            557
-          ]
-        },
-        {
-          "size":[
-            279,
-            278
-          ]
-        }
-      ],
-      "metadata":{
-        "":{
-          "MAX":"957",
-          "MEAN":"610.5694868512112",
-          "MIN":"229",
-          "MODE":"499",
-          "STATISTICS_MAXIMUM":"957",
-          "STATISTICS_MEAN":"610.56948685121",
-          "STATISTICS_MINIMUM":"229",
-          "STATISTICS_STDDEV":"134.95154253679",
-          "STD_DEV":"134.95154253679448"
-        }
-      }
-    },
-    {
-      "band":4,
-      "block":[
-        512,
-        512
-      ],
-      "type":"UInt16",
-      "colorInterpretation":"Undefined",
-      "min":285.0,
-      "max":950.0,
-      "minimum":285.0,
-      "maximum":950.0,
-      "mean":626.918,
-      "stdDev":120.6,
-      "noDataValue":1023.0,
-      "overviews":[
-        {
-          "size":[
-            2235,
-            2230
-          ]
-        },
-        {
-          "size":[
-            1117,
-            1115
-          ]
-        },
-        {
-          "size":[
-            558,
-            557
-          ]
-        },
-        {
-          "size":[
-            279,
-            278
-          ]
-        }
-      ],
-      "metadata":{
-        "":{
-          "MAX":"950",
-          "MEAN":"626.9184970590452",
-          "MIN":"285",
-          "MODE":"535",
-          "STATISTICS_MAXIMUM":"950",
-          "STATISTICS_MEAN":"626.91849705905",
-          "STATISTICS_MINIMUM":"285",
-          "STATISTICS_STDDEV":"120.60023481629",
-          "STD_DEV":"120.60023481628666"
-        }
-      }
-    },
-    {
-      "band":5,
-      "block":[
-        512,
-        512
-      ],
-      "type":"UInt16",
-      "colorInterpretation":"Undefined",
-      "min":76.0,
-      "max":1012.0,
-      "minimum":76.0,
-      "maximum":1012.0,
-      "mean":845.397,
-      "stdDev":96.808,
-      "noDataValue":1023.0,
-      "overviews":[
-        {
-          "size":[
-            2235,
-            2230
-          ]
-        },
-        {
-          "size":[
-            1117,
-            1115
-          ]
-        },
-        {
-          "size":[
-            558,
-            557
-          ]
-        },
-        {
-          "size":[
-            279,
-            278
-          ]
-        }
-      ],
-      "metadata":{
-        "":{
-          "MAX":"1012",
-          "MEAN":"845.3966452037209",
-          "MIN":"76",
-          "MODE":"803",
-          "STATISTICS_MAXIMUM":"1012",
-          "STATISTICS_MEAN":"845.39664520372",
-          "STATISTICS_MINIMUM":"76",
-          "STATISTICS_STDDEV":"96.808243605811",
-          "STD_DEV":"96.80824360581073"
-        }
-      }
-    },
-    {
-      "band":6,
-      "block":[
-        512,
-        512
-      ],
-      "type":"UInt16",
-      "colorInterpretation":"Undefined",
-      "min":805.0,
-      "max":995.0,
-      "minimum":805.0,
-      "maximum":995.0,
-      "mean":901.397,
-      "stdDev":33.776,
-      "noDataValue":1023.0,
-      "overviews":[
-        {
-          "size":[
-            2235,
-            2230
-          ]
-        },
-        {
-          "size":[
-            1117,
-            1115
-          ]
-        },
-        {
-          "size":[
-            558,
-            557
-          ]
-        },
-        {
-          "size":[
-            279,
-            278
-          ]
-        }
-      ],
-      "metadata":{
-        "":{
-          "MAX":"995",
-          "MEAN":"901.3966554000125",
-          "MIN":"805",
-          "MODE":"906",
-          "STATISTICS_MAXIMUM":"995",
-          "STATISTICS_MEAN":"901.39665540001",
-          "STATISTICS_MINIMUM":"805",
-          "STATISTICS_STDDEV":"33.775630893969",
-          "STD_DEV":"33.775630893968625"
-        }
-      }
-    }
-  ]
+  
+  "a":["VIS","SWIR","MULTI"],
+  "b":["VIS","SWIR","TIR1","TIR2","MIR","WV","VIS_RADIANCE","SWIR_RADIANCE","TIR1_RADIANCE","TIR2_RADIANCE","MIR_RADIANCE","WV_RADIANCE","TIR1_TEMP","TIR2_TEMP","MIR_TEMP","WV_TEMP"]
 }

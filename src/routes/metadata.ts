@@ -1210,4 +1210,557 @@ metadataRouter.get(
   }
 );
 
+/**
+ * @swagger
+ * /api/metadata/{satId}/{processingLevel}/types:
+ *   get:
+ *     summary: Get all available types for a specific satellite and processing level
+ *     tags: [Metadata]
+ *     parameters:
+ *       - in: path
+ *         name: satId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The satellite ID (e.g., 3R)
+ *       - in: path
+ *         name: processingLevel
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The processing level (e.g., L1B)
+ *       - in: query
+ *         name: productCode
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: Optional filter by product code
+ *       - in: query
+ *         name: showHidden
+ *         schema:
+ *           type: boolean
+ *         required: false
+ *         description: Whether to include types from hidden products (default is false)
+ *     responses:
+ *       200:
+ *         description: List of available types
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 types:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   description: List of available types (e.g., VIS, IR, multi)
+ *       500:
+ *         description: Server error
+ */
+metadataRouter.get(
+  "/:satId/:processingLevel/types",
+  async (req: Request, res: Response) => {
+    try {
+      const satId = req.params.satId;
+      const processingLevel = req.params.processingLevel;
+      const { productCode } = req.query;
+      const showHidden = req.query.showHidden === 'true';
+
+      // Build base query
+      const query: any = {
+        satelliteId: satId,
+        processingLevel: processingLevel,
+      };
+
+      // Add product code filter if provided
+      if (productCode) {
+        query.productCode = productCode;
+      }
+
+      // Handle visibility filter
+      if (!showHidden) {
+        // Get visible products for this satellite and processing level
+        const visibleProductQuery: any = {
+          satelliteId: satId,
+          processingLevel: processingLevel,
+          isVisible: true
+        };
+
+        if (productCode) {
+          visibleProductQuery.productId = productCode;
+        }
+
+        const visibleProducts = await Product.find(visibleProductQuery);
+        const visibleProductIds = visibleProducts.map(product => product._id);
+
+        // Add filter for visible products
+        query.product = { $in: visibleProductIds };
+      }
+
+      // Get COGs that match the criteria
+      const cogs = await CogModel.find(query);
+
+      // Extract unique types
+      const types = [...new Set(cogs.map(cog => cog.type))];
+
+      res.status(200).json({
+        types
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).send("Something is wrong");
+    }
+  }
+);
+
+/**
+ * @swagger
+ * /api/metadata/{satId}/{processingLevel}/types-with-latest:
+ *   get:
+ *     summary: Get all available types for a specific satellite and processing level with latest COG for each type
+ *     tags: [Metadata]
+ *     parameters:
+ *       - in: path
+ *         name: satId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The satellite ID (e.g., 3R)
+ *       - in: path
+ *         name: processingLevel
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The processing level (e.g., L1B)
+ *       - in: query
+ *         name: productCode
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: Optional filter by product code
+ *       - in: query
+ *         name: showHidden
+ *         schema:
+ *           type: boolean
+ *         required: false
+ *         description: Whether to include types from hidden products (default is false)
+ *     responses:
+ *       200:
+ *         description: List of available types with latest COG for each type
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 typeData:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       type:
+ *                         type: string
+ *                         description: Type name (e.g., VIS, IR, multi)
+ *                       latestCog:
+ *                         $ref: '#/components/schemas/COG'
+ *                         description: The most recent COG of this type
+ *       500:
+ *         description: Server error
+ */
+metadataRouter.get(
+  "/:satId/:processingLevel/types-with-latest",
+  async (req: Request, res: Response) => {
+    try {
+      const satId = req.params.satId;
+      const processingLevel = req.params.processingLevel;
+      const { productCode } = req.query;
+      const showHidden = req.query.showHidden === 'true';
+
+      // Build base query
+      const query: any = {
+        satelliteId: satId,
+        processingLevel: processingLevel,
+      };
+
+      // Add product code filter if provided
+      if (productCode) {
+        query.productCode = productCode;
+      }
+
+      // Handle visibility filter
+      if (!showHidden) {
+        // Get visible products for this satellite and processing level
+        const visibleProductQuery: any = {
+          satelliteId: satId,
+          processingLevel: processingLevel,
+          isVisible: true
+        };
+
+        if (productCode) {
+          visibleProductQuery.productId = productCode;
+        }
+
+        const visibleProducts = await Product.find(visibleProductQuery);
+        const visibleProductIds = visibleProducts.map(product => product._id);
+
+        // Add filter for visible products
+        query.product = { $in: visibleProductIds };
+      }
+
+      // Get COGs that match the criteria
+      const cogs = await CogModel.find(query);
+
+      // Extract unique types
+      const uniqueTypes = [...new Set(cogs.map(cog => cog.type))];
+
+      // For each type, get the latest COG
+      const typeData = await Promise.all(uniqueTypes.map(async (type) => {
+        const typeQuery = { ...query, type };
+        const latestCog = await CogModel.findOne(typeQuery)
+          .sort({ aquisition_datetime: -1 })
+          .limit(1);
+
+        return {
+          type,
+          latestCog
+        };
+      }));
+
+      res.status(200).json({
+        typeData
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).send("Something is wrong");
+    }
+  }
+);
+
+/**
+ * @swagger
+ * /api/metadata/{satId}/{processingLevel}/all-bands:
+ *   get:
+ *     summary: Get all available band types for a specific satellite and processing level
+ *     tags: [Metadata]
+ *     parameters:
+ *       - in: path
+ *         name: satId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The satellite ID (e.g., 3R)
+ *       - in: path
+ *         name: processingLevel
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The processing level (e.g., L1B)
+ *       - in: query
+ *         name: productCode
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: Optional filter by product code
+ *       - in: query
+ *         name: showHidden
+ *         schema:
+ *           type: boolean
+ *         required: false
+ *         description: Whether to include bands from hidden products (default is false)
+ *     responses:
+ *       200:
+ *         description: List of all available band types
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 bands:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   description: List of all available band types (e.g., VIS, SWIR, TIR1, TIR2, etc.)
+ *       500:
+ *         description: Server error
+ */
+metadataRouter.get(
+  "/:satId/:processingLevel/all-bands",
+  async (req: Request, res: Response) => {
+    try {
+      const satId = req.params.satId;
+      const processingLevel = req.params.processingLevel;
+      const { productCode } = req.query;
+      const showHidden = req.query.showHidden === 'true';
+
+      // Build base query
+      const query: any = {
+        satelliteId: satId,
+        processingLevel: processingLevel,
+      };
+
+      // Add product code filter if provided
+      if (productCode) {
+        query.productCode = productCode;
+      }
+
+      // Handle visibility filter
+      if (!showHidden) {
+        // Get visible products for this satellite and processing level
+        const visibleProductQuery: any = {
+          satelliteId: satId,
+          processingLevel: processingLevel,
+          isVisible: true
+        };
+
+        if (productCode) {
+          visibleProductQuery.productId = productCode;
+        }
+
+        const visibleProducts = await Product.find(visibleProductQuery);
+        const visibleProductIds = visibleProducts.map(product => product._id);
+
+        // Add filter for visible products
+        query.product = { $in: visibleProductIds };
+      }
+
+      // Get COGs that match the criteria
+      const cogs = await CogModel.find(query);
+
+      // Initialize array to hold all band descriptions
+      const allBands: string[] = [];
+
+      // Extract band descriptions and types
+      cogs.forEach(cog => {
+        // Add the COG type itself
+        if (cog.type && !allBands.includes(cog.type)) {
+          allBands.push(cog.type);
+        }
+
+        // Add all band descriptions from each COG, removing "IMG_" prefix
+        if (cog.bands && Array.isArray(cog.bands)) {
+          cog.bands.forEach(band => {
+            if (band.description) {
+              // Remove "IMG_" prefix if it exists
+              const cleanBandName = band.description.replace(/^IMG_/, '');
+              if (!allBands.includes(cleanBandName)) {
+                allBands.push(cleanBandName);
+              }
+            }
+          });
+        }
+      });
+
+      // Sort the bands alphabetically
+      // allBands.sort();
+
+      res.status(200).json({
+        bands: allBands
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).send("Something is wrong");
+    }
+  }
+);
+
+/**
+ * @swagger
+ * /api/metadata/{satId}/{processingLevel}/all-bands-with-latest-data:
+ *   get:
+ *     summary: Get all available band types with their latest data
+ *     tags: [Metadata]
+ *     parameters:
+ *       - in: path
+ *         name: satId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The satellite ID (e.g., 3R)
+ *       - in: path
+ *         name: processingLevel
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The processing level (e.g., L1B)
+ *       - in: query
+ *         name: productCode
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: Optional filter by product code
+ *       - in: query
+ *         name: showHidden
+ *         schema:
+ *           type: boolean
+ *         required: false
+ *         description: Whether to include bands from hidden products (default is false)
+ *     responses:
+ *       200:
+ *         description: List of all available band types with their data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 bandData:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       band:
+ *                         type: string
+ *                         description: Band name/description
+ *                       source:
+ *                         type: string
+ *                         description: Type of COG this band comes from
+ *                       cogId:
+ *                         type: string
+ *                         description: ID of the COG containing this band
+ *                       bandInfo:
+ *                         type: object
+ *                         description: Additional band information
+ *                       aquisition_datetime:
+ *                         type: number
+ *                         description: Acquisition timestamp of the COG
+ *       500:
+ *         description: Server error
+ */
+metadataRouter.get(
+  "/:satId/:processingLevel/all-bands-with-latest-data",
+  async (req: Request, res: Response) => {
+    try {
+      const satId = req.params.satId;
+      const processingLevel = req.params.processingLevel;
+      const { productCode } = req.query;
+      const showHidden = req.query.showHidden === 'true';
+
+      // Build base query
+      const query: any = {
+        satelliteId: satId,
+        processingLevel: processingLevel,
+      };
+
+      // Add product code filter if provided
+      if (productCode) {
+        query.productCode = productCode;
+      }
+
+      // Handle visibility filter
+      if (!showHidden) {
+        // Get visible products for this satellite and processing level
+        const visibleProductQuery: any = {
+          satelliteId: satId,
+          processingLevel: processingLevel,
+          isVisible: true
+        };
+
+        if (productCode) {
+          visibleProductQuery.productId = productCode;
+        }
+
+        const visibleProducts = await Product.find(visibleProductQuery);
+        const visibleProductIds = visibleProducts.map(product => product._id);
+
+        // Add filter for visible products
+        query.product = { $in: visibleProductIds };
+      }
+
+      // Get COGs that match the criteria
+      const cogs = await CogModel.find(query).sort({ aquisition_datetime: -1 });
+
+      // Single map to track all bands
+      const bandMap = new Map<string, any>();
+
+      // First collect all band descriptions from all COGs
+      // This takes precedence over COG types
+      cogs.forEach(cog => {
+        if (cog.bands && Array.isArray(cog.bands)) {
+          cog.bands.forEach(band => {
+            if (band.description) {
+              // Remove "IMG_" prefix if it exists
+              const cleanBandName = band.description.replace(/^IMG_/, '');
+
+              // Skip if this band name is already mapped from a non-MULTI source
+              if (!bandMap.has(cleanBandName) ||
+                (bandMap.has(cleanBandName) &&
+                  bandMap.get(cleanBandName).source === 'MULTI' &&
+                  cog.type !== 'MULTI')) {
+
+                bandMap.set(cleanBandName, {
+                  band: cleanBandName,
+                  originalName: band.description,
+                  source: cog.type,
+                  cogId: cog._id,
+                  filename: cog.filename,
+                  filepath: cog.filepath,
+                  aquisition_datetime: cog.aquisition_datetime,
+                  acquisition_date: convertFromTimestamp(cog.aquisition_datetime),
+                  productCode: cog.productCode,
+                  size: cog.size,
+                  bandInfo: {
+                    ...band,
+                    description: cleanBandName
+                  },
+                  coverage: cog.coverage,
+                  cornerCoords: cog.cornerCoords,
+                  version: cog.version,
+                  revision: cog.revision,
+                  coordinateSystem: cog.coordinateSystem,
+                  cogMetadata: {
+                    _id: cog._id,
+                    satellite: cog.satellite,
+                    satelliteId: cog.satelliteId,
+                    processingLevel: cog.processingLevel
+                  }
+                });
+              }
+            }
+          });
+        }
+      });
+
+      // Then add COG types only if they don't exist as a band already
+      cogs.forEach(cog => {
+        if (cog.type && cog.type !== 'MULTI' && !bandMap.has(cog.type)) {
+          bandMap.set(cog.type, {
+            band: cog.type,
+            source: cog.type,
+            cogId: cog._id,
+            filename: cog.filename,
+            filepath: cog.filepath,
+            aquisition_datetime: cog.aquisition_datetime,
+            acquisition_date: convertFromTimestamp(cog.aquisition_datetime),
+            productCode: cog.productCode,
+            size: cog.size,
+            coverage: cog.coverage,
+            cornerCoords: cog.cornerCoords,
+            version: cog.version,
+            revision: cog.revision,
+            coordinateSystem: cog.coordinateSystem,
+            bandInfo: null, // No specific band info for the COG type itself
+            cogMetadata: {
+              _id: cog._id,
+              satellite: cog.satellite,
+              satelliteId: cog.satelliteId,
+              processingLevel: cog.processingLevel
+            }
+          });
+        }
+      });
+
+      // Convert map to array
+      const bandData = Array.from(bandMap.values());
+
+      // Sort by band name
+      bandData.sort((a, b) => a.band.localeCompare(b.band));
+
+      res.status(200).json({
+        bandData
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).send("Something is wrong");
+    }
+  }
+);
+
 export default metadataRouter;
