@@ -1,5 +1,6 @@
 import express, { Request, Response } from "express";
 import Satellite from "../models/SatelliteModel";
+import mongoose from "mongoose";
 
 const satelliteRouter = express.Router();
 
@@ -152,8 +153,6 @@ satelliteRouter.get("/:id", async (req: Request, res: Response) => {
   }
 });
 
-
-
 /**
  * @swagger
  * /api/satellite/{id}:
@@ -185,6 +184,7 @@ satelliteRouter.delete("/:id", async (req: Request, res: Response) => {
     res.status(500).json({ error: error.message });
   }
 });
+
 /**
  * @swagger
  * /api/satellite/{id}:
@@ -237,6 +237,7 @@ satelliteRouter.put("/:id", async (req: Request, res: Response) => {
     res.status(500).json({ error: error.message });
   }
 });
+
 /**
  * @swagger
  * /api/satellite/{id}/products:
@@ -334,5 +335,118 @@ satelliteRouter.post("/:id/products", async (req: Request, res: Response) => {
 });
 
 
+
+/**
+ * @swagger
+ * /api/satellite/{id}/stats:
+ *   get:
+ *     summary: Get statistical information about a satellite
+ *     tags: [Satellites]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The satellite ID
+ *     responses:
+ *       200:
+ *         description: Satellite statistics retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 satelliteId:
+ *                   type: string
+ *                 name:
+ *                   type: string
+ *                 productCount:
+ *                   type: integer
+ *                 cogCount:
+ *                   type: integer
+ *                 processingLevels:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                 latestAcquisition:
+ *                   type: string
+ *                   format: date-time
+ *                 earliestAcquisition:
+ *                   type: string
+ *                   format: date-time
+ *                 availableBands:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *       404:
+ *         description: Satellite not found
+ *       500:
+ *         description: Server error
+ */
+satelliteRouter.get("/:id/stats", async (req: Request, res: Response) => {
+  try {
+    const satelliteId = req.params.id;
+
+    // Get the satellite
+    const satellite = await Satellite.findOne({ satelliteId });
+    if (!satellite) {
+      return res.status(404).json({ error: "Satellite not found!" });
+    }
+
+    // Import models
+    const Product = require("../models/ProductModel").default;
+    const COG = require("../models/CogModel").default;
+
+    // Get count of products
+    const productCount = await Product.countDocuments({ satelliteId });
+
+    // Get count of COGs
+    const cogCount = await COG.countDocuments({ satelliteId });
+
+    // Get unique processing levels
+    const processingLevels = await Product.distinct("processingLevel", { satelliteId });
+
+    // Get latest and earliest acquisition times
+    const latestCog = await COG.findOne({ satelliteId }).sort({ aquisition_datetime: -1 });
+    const earliestCog = await COG.findOne({ satelliteId }).sort({ aquisition_datetime: 1 });
+
+    const latestAcquisition = latestCog ? new Date(latestCog.aquisition_datetime).toISOString() : null;
+    const earliestAcquisition = earliestCog ? new Date(earliestCog.aquisition_datetime).toISOString() : null;
+
+    // Get all available bands
+    const cogs = await COG.find({ satelliteId });
+    const availableBands = new Set();
+
+    cogs.forEach((cog: any) => {
+      // Add the COG type as a band
+      if (cog.type) availableBands.add(cog.type);
+
+      // Add all bands from the COG
+      if (cog.bands && Array.isArray(cog.bands)) {
+        cog.bands.forEach((band: any) => {
+          if (band.description) {
+            // Remove "IMG_" prefix if it exists
+            const cleanBandName = band.description.replace(/^IMG_/, '');
+            availableBands.add(cleanBandName);
+          }
+        });
+      }
+    });
+
+    res.status(200).json({
+      satelliteId: satellite.satelliteId,
+      name: satellite.name,
+      productCount,
+      cogCount,
+      processingLevels,
+      latestAcquisition,
+      earliestAcquisition,
+      availableBands: Array.from(availableBands)
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 export default satelliteRouter;

@@ -1552,6 +1552,12 @@ metadataRouter.get(
       // Sort the bands alphabetically
       // allBands.sort();
 
+      // REMOVE "MULTI" from the list
+      const multiIndex = allBands.indexOf("MULTI");
+      if (multiIndex > -1) {
+        allBands.splice(multiIndex, 1);
+      }
+
       res.status(200).json({
         bands: allBands
       });
@@ -1762,5 +1768,871 @@ metadataRouter.get(
     }
   }
 );
+
+
+/**
+ * @swagger
+ * /api/metadata/time-series:
+ *   get:
+ *     summary: Get time series data for a specified band or type
+ *     tags: [Metadata]
+ *     parameters:
+ *       - in: query
+ *         name: satelliteId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The satellite ID
+ *       - in: query
+ *         name: band
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The band or type to get time series for (e.g., VIS, TIR1)
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         required: true
+ *         description: Start date (ISO format)
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         required: true
+ *         description: End date (ISO format)
+ *       - in: query
+ *         name: interval
+ *         schema:
+ *           type: string
+ *           enum: [hourly, daily, weekly, monthly]
+ *         required: false
+ *         description: Aggregation interval (default is daily)
+ *       - in: query
+ *         name: processingLevel
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: Filter by processing level
+ *       - in: query
+ *         name: productCode
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: Filter by product code
+ *       - in: query
+ *         name: showHidden
+ *         schema:
+ *           type: boolean
+ *         required: false
+ *         description: Whether to include COGs from hidden products
+ *       - in: query
+ *         name: populateWithResults
+ *         schema:
+ *           type: boolean
+ *         required: false
+ *         description: Whether to include the full COG details in the response (default is false)
+ *     responses:
+ *       200:
+ *         description: Time series data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 timeSeries:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       interval:
+ *                         type: string
+ *                         format: date-time
+ *                       count:
+ *                         type: integer
+ *                       cogIds:
+ *                         type: array
+ *                         items:
+ *                           type: string
+ *                       cogs:
+ *                         type: array
+ *                         items:
+ *                           $ref: '#/components/schemas/COG'
+ *                         description: Full COG details (only included if populateWithResults=true)
+ *                 band:
+ *                   type: string
+ *                 totalCount:
+ *                   type: integer
+ *       400:
+ *         description: Invalid request parameters
+ *       500:
+ *         description: Server error
+ */
+metadataRouter.get("/time-series", async (req: Request, res: Response) => {
+  try {
+    const {
+      satelliteId,
+      band,
+      startDate,
+      endDate,
+      interval = 'daily',
+      processingLevel,
+      productCode,
+      showHidden = false,
+      populateWithResults = false
+    } = req.query;
+
+    // Validate required parameters
+    if (!satelliteId || !band || !startDate || !endDate) {
+      return res.status(400).json({
+        message: "satelliteId, band, startDate, and endDate are required parameters"
+      });
+    }
+
+    // Parse dates
+    const start = new Date(startDate as string).getTime();
+    const end = new Date(endDate as string).getTime();
+
+    if (isNaN(start) || isNaN(end)) {
+      return res.status(400).json({ message: "Invalid date format" });
+    }
+
+    // Build the base query
+    const query: any = {
+      satelliteId,
+      aquisition_datetime: {
+        $gte: start,
+        $lte: end
+      }
+    };
+
+    // Add processing level filter if provided
+    if (processingLevel) {
+      query.processingLevel = processingLevel;
+    }
+
+    // Add product code filter if provided
+    if (productCode) {
+      query.productCode = productCode;
+    }
+
+    // Handle visibility filter
+    if (showHidden === 'false' || !showHidden) {
+      // Get visible products
+      const visibleProductsQuery: any = {
+        satelliteId,
+        isVisible: true
+      };
+
+      if (processingLevel) {
+        visibleProductsQuery.processingLevel = processingLevel;
+      }
+
+      if (productCode) {
+        visibleProductsQuery.productId = productCode;
+      }
+
+      const visibleProducts = await Product.find(visibleProductsQuery);
+      const visibleProductIds = visibleProducts.map(product => product._id);
+
+      // Add filter for visible products
+      query.product = { $in: visibleProductIds };
+    }
+
+    // Get all COGs that match the criteria
+    const cogs = await CogModel.find(query).populate({
+      path: 'product',
+      select: '_id productId processingLevel isVisible' // Select specific fields you need
+    });
+
+    if (cogs.length === 0) {
+      return res.status(200).json({
+        timeSeries: [],
+        band: band,
+        totalCount: 0
+      });
+    }
+
+    // Filter COGs by band/type
+    const bandCogs = cogs.filter(cog => {
+      // Check if the band matches the COG type
+      if (cog.type === band) {
+        return true;
+      }
+
+      // Check if the band is in the COG's bands array
+      if (cog.bands && Array.isArray(cog.bands)) {
+        return cog.bands.some(b => {
+          const cleanBandName = b.description ? b.description.replace(/^IMG_/, '') : '';
+          return cleanBandName === band;
+        });
+      }
+
+      return false;
+    });
+
+    if (bandCogs.length === 0) {
+      return res.status(200).json({
+        timeSeries: [],
+        band: band,
+        totalCount: 0,
+        message: `No COGs found with band/type '${band}'`
+      });
+    }
+
+    // Group COGs by interval
+    const timeSeriesMap = new Map<string, any>();
+
+    // Define the interval grouping function (similar to temporal-distribution)
+    const getIntervalKey = (timestamp: number) => {
+      const date = new Date(timestamp);
+
+      switch (interval) {
+        case 'hourly':
+          return new Date(
+            date.getFullYear(),
+            date.getMonth(),
+            date.getDate(),
+            date.getHours()
+          ).toISOString();
+
+        case 'weekly':
+          // Get the first day of the week (Sunday)
+          const day = date.getDate() - date.getDay();
+          return new Date(
+            date.getFullYear(),
+            date.getMonth(),
+            day
+          ).toISOString();
+
+        case 'monthly':
+          return new Date(
+            date.getFullYear(),
+            date.getMonth(),
+            1
+          ).toISOString();
+
+        case 'daily':
+        default:
+          return new Date(
+            date.getFullYear(),
+            date.getMonth(),
+            date.getDate()
+          ).toISOString();
+      }
+    };
+
+    // Group COGs by interval
+    bandCogs.forEach(cog => {
+      const intervalKey = getIntervalKey(cog.aquisition_datetime);
+
+      if (!timeSeriesMap.has(intervalKey)) {
+        timeSeriesMap.set(intervalKey, {
+          interval: intervalKey,
+          count: 0,
+          cogIds: [],
+          cogs: [],
+          products: new Map() // Track unique products per interval
+        });
+      }
+
+      const entry = timeSeriesMap.get(intervalKey);
+      entry.count++;
+      
+      // Store COG ID
+      entry.cogIds.push(cog._id);
+      
+      // Store full COG if populateWithResults is true
+      if (populateWithResults === 'true') {
+        entry.cogs.push(cog);
+      }
+
+      // Add product information if available
+      if (cog.product) {
+        const productId = cog.product._id.toString();
+        if (!entry.products.has(productId)) {
+          entry.products.set(productId, {
+            id: productId,
+            productId: cog.productCode,
+            processingLevel: cog.processingLevel,
+            cogCount: 0
+          });
+        }
+        const productEntry = entry.products.get(productId);
+        productEntry.cogCount++;
+      }
+    });
+
+    // Convert map to array and sort by interval
+    const timeSeries = Array.from(timeSeriesMap.values())
+      .map(entry => {
+        // Convert products Map to array
+        entry.products = Array.from(entry.products.values());
+        
+        // If not populating with results, remove the cogs array to save bandwidth
+        if (populateWithResults !== 'true') {
+          delete entry.cogs;
+        }
+        
+        return entry;
+      })
+      .sort((a, b) => new Date(a.interval).getTime() - new Date(b.interval).getTime());
+
+    // Get unique products across all intervals
+    const uniqueProducts = new Map();
+    bandCogs.forEach(cog => {
+      if (cog.product) {
+        const productId = cog.product._id.toString();
+        if (!uniqueProducts.has(productId)) {
+          uniqueProducts.set(productId, {
+            id: productId,
+            productId: cog.productCode,
+            processingLevel: cog.processingLevel,
+            cogCount: 0
+          });
+        }
+        uniqueProducts.get(productId).cogCount++;
+      }
+    });
+
+    res.status(200).json({
+      timeSeries,
+      band,
+      totalCount: bandCogs.length,
+      products: Array.from(uniqueProducts.values())
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Something went wrong");
+  }
+});
+
+/**
+ * @swagger
+ * /api/metadata/analytics/band-distribution:
+ *   get:
+ *     summary: Get distribution of bands across satellites and products
+ *     tags: [Metadata]
+ *     parameters:
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         required: false
+ *         description: Start date for analysis period (ISO format)
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         required: false
+ *         description: End date for analysis period (ISO format)
+ *       - in: query
+ *         name: satelliteIds
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: Comma-separated list of satellite IDs
+ *       - in: query
+ *         name: processingLevels
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: Comma-separated list of processing levels
+ *       - in: query
+ *         name: showHidden
+ *         schema:
+ *           type: boolean
+ *         required: false
+ *         description: Whether to include hidden products (default is false)
+ *     responses:
+ *       200:
+ *         description: Band distribution data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 bandDistribution:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       band:
+ *                         type: string
+ *                       count:
+ *                         type: integer
+ *                       satelliteDistribution:
+ *                         type: object
+ *                         additionalProperties:
+ *                           type: integer
+ *                       processingLevelDistribution:
+ *                         type: object
+ *                         additionalProperties:
+ *                           type: integer
+ *                 totalBands:
+ *                   type: integer
+ *                 uniqueBands:
+ *                   type: integer
+ *                 cogCount:
+ *                   type: integer
+ *       500:
+ *         description: Server error
+ */
+metadataRouter.get("/analytics/band-distribution", async (req: Request, res: Response) => {
+  try {
+    const {
+      startDate,
+      endDate,
+      satelliteIds,
+      processingLevels,
+      showHidden = false
+    } = req.query;
+
+    // Build base query
+    const query: any = {};
+
+    // Add date range filter if provided
+    if (startDate || endDate) {
+      query.aquisition_datetime = {};
+
+      if (startDate) {
+        query.aquisition_datetime.$gte = new Date(startDate as string).getTime();
+      }
+
+      if (endDate) {
+        query.aquisition_datetime.$lte = new Date(endDate as string).getTime();
+      }
+    }
+
+    // Add satellite filter if provided
+    if (satelliteIds) {
+      const satIds = (satelliteIds as string).split(',').map(id => id.trim());
+      if (satIds.length > 0) {
+        query.satelliteId = { $in: satIds };
+      }
+    }
+
+    // Add processing level filter if provided
+    if (processingLevels) {
+      const levels = (processingLevels as string).split(',').map(level => level.trim());
+      if (levels.length > 0) {
+        query.processingLevel = { $in: levels };
+      }
+    }
+
+    // Handle visibility filter
+    if (showHidden === 'false' || !showHidden) {
+      // Get visible products
+      const visibleProductsQuery: any = { isVisible: true };
+
+      if (satelliteIds) {
+        const satIds = (satelliteIds as string).split(',').map(id => id.trim());
+        if (satIds.length > 0) {
+          visibleProductsQuery.satelliteId = { $in: satIds };
+        }
+      }
+
+      if (processingLevels) {
+        const levels = (processingLevels as string).split(',').map(level => level.trim());
+        if (levels.length > 0) {
+          visibleProductsQuery.processingLevel = { $in: levels };
+        }
+      }
+
+      const visibleProducts = await Product.find(visibleProductsQuery);
+      const visibleProductIds = visibleProducts.map(product => product._id);
+
+      // Add filter for visible products
+      query.product = { $in: visibleProductIds };
+    }
+
+    // Get COGs matching the criteria
+    const cogs = await CogModel.find(query);
+
+    if (cogs.length === 0) {
+      return res.status(200).json({
+        bandDistribution: [],
+        totalBands: 0,
+        uniqueBands: 0,
+        cogCount: 0
+      });
+    }
+
+    // Process band distribution
+    const bandMap = new Map<string, any>();
+
+    cogs.forEach(cog => {
+      // Process COG type as a band
+      if (cog.type) {
+        if (!bandMap.has(cog.type)) {
+          bandMap.set(cog.type, {
+            band: cog.type,
+            count: 0,
+            satelliteDistribution: {},
+            processingLevelDistribution: {}
+          });
+        }
+
+        const typeEntry = bandMap.get(cog.type);
+        typeEntry.count++;
+
+        // Update satellite distribution
+        if (!typeEntry.satelliteDistribution[cog.satelliteId]) {
+          typeEntry.satelliteDistribution[cog.satelliteId] = 0;
+        }
+        typeEntry.satelliteDistribution[cog.satelliteId]++;
+
+        // Update processing level distribution
+        if (cog.processingLevel) {
+          if (!typeEntry.processingLevelDistribution[cog.processingLevel]) {
+            typeEntry.processingLevelDistribution[cog.processingLevel] = 0;
+          }
+          typeEntry.processingLevelDistribution[cog.processingLevel]++;
+        }
+      }
+
+      // Process each band from bands array
+      if (cog.bands && Array.isArray(cog.bands)) {
+        cog.bands.forEach(band => {
+          if (band.description) {
+            const cleanBandName = band.description.replace(/^IMG_/, '');
+
+            if (!bandMap.has(cleanBandName)) {
+              bandMap.set(cleanBandName, {
+                band: cleanBandName,
+                count: 0,
+                satelliteDistribution: {},
+                processingLevelDistribution: {}
+              });
+            }
+
+            const bandEntry = bandMap.get(cleanBandName);
+            bandEntry.count++;
+
+            // Update satellite distribution
+            if (!bandEntry.satelliteDistribution[cog.satelliteId]) {
+              bandEntry.satelliteDistribution[cog.satelliteId] = 0;
+            }
+            bandEntry.satelliteDistribution[cog.satelliteId]++;
+
+            // Update processing level distribution
+            if (cog.processingLevel) {
+              if (!bandEntry.processingLevelDistribution[cog.processingLevel]) {
+                bandEntry.processingLevelDistribution[cog.processingLevel] = 0;
+              }
+              bandEntry.processingLevelDistribution[cog.processingLevel]++;
+            }
+          }
+        });
+      }
+    });
+
+    // Convert map to array and sort by count (descending)
+    const bandDistribution = Array.from(bandMap.values())
+      .sort((a, b) => b.count - a.count);
+
+    res.status(200).json({
+      bandDistribution,
+      totalBands: bandDistribution.reduce((sum, item) => sum + item.count, 0),
+      uniqueBands: bandDistribution.length,
+      cogCount: cogs.length
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Something went wrong");
+  }
+});
+
+/**
+ * @swagger
+ * /api/metadata/cog/search:
+ *   post:
+ *     summary: Advanced search for COGs with spatial filtering
+ *     tags: [Metadata]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               satelliteIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array of satellite IDs to filter by
+ *               processingLevels:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array of processing levels to filter by
+ *               productCodes:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array of product codes to filter by
+ *               timeRange:
+ *                 type: object
+ *                 properties:
+ *                   start:
+ *                     type: string
+ *                     format: date-time
+ *                   end:
+ *                     type: string
+ *                     format: date-time
+ *               spatialFilter:
+ *                 type: object
+ *                 properties:
+ *                   bbox:
+ *                     type: array
+ *                     items:
+ *                       type: number
+ *                     description: Bounding box [west, south, east, north]
+ *                   point:
+ *                     type: object
+ *                     properties:
+ *                       lat:
+ *                         type: number
+ *                       lon:
+ *                         type: number
+ *               types:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array of COG types to filter by
+ *               bands:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array of band names to filter by
+ *               showHidden:
+ *                 type: boolean
+ *                 description: Whether to include COGs from hidden products
+ *               limit:
+ *                 type: integer
+ *                 description: Maximum number of COGs to return
+ *               skip:
+ *                 type: integer
+ *                 description: Number of COGs to skip (for pagination)
+ *               sortBy:
+ *                 type: string
+ *                 enum: [aquisition_datetime, createdAt, updatedAt]
+ *                 description: Field to sort by
+ *               sortOrder:
+ *                 type: string
+ *                 enum: [asc, desc]
+ *                 description: Sort order
+ *     responses:
+ *       200:
+ *         description: Search results
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 cogs:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/COG'
+ *                 totalCount:
+ *                   type: integer
+ *                 page:
+ *                   type: integer
+ *                 totalPages:
+ *                   type: integer
+ *       500:
+ *         description: Server error
+ */
+metadataRouter.post("/cog/search", async (req: Request, res: Response) => {
+  try {
+    const {
+      satelliteIds,
+      processingLevels,
+      productCodes,
+      timeRange,
+      spatialFilter,
+      types,
+      bands,
+      showHidden = false,
+      limit = 100,
+      skip = 0,
+      sortBy = "aquisition_datetime",
+      sortOrder = "desc"
+    } = req.body;
+
+    // Build base query
+    const query: any = {};
+
+    // Add satellite filter
+    if (satelliteIds && Array.isArray(satelliteIds) && satelliteIds.length > 0) {
+      query.satelliteId = { $in: satelliteIds };
+    }
+
+    // Add processing level filter
+    if (processingLevels && Array.isArray(processingLevels) && processingLevels.length > 0) {
+      query.processingLevel = { $in: processingLevels };
+    }
+
+    // Add product code filter
+    if (productCodes && Array.isArray(productCodes) && productCodes.length > 0) {
+      query.productCode = { $in: productCodes };
+    }
+
+    // Add time range filter
+    if (timeRange && timeRange.start && timeRange.end) {
+      query.aquisition_datetime = {
+        $gte: new Date(timeRange.start).getTime(),
+        $lte: new Date(timeRange.end).getTime()
+      };
+    }
+
+    // Add type filter
+    if (types && Array.isArray(types) && types.length > 0) {
+      query.type = { $in: types };
+    }
+
+    // Handle visibility filter
+    if (!showHidden) {
+      // Get visible products
+      const visibleProductsQuery: any = { isVisible: true };
+
+      if (satelliteIds && Array.isArray(satelliteIds) && satelliteIds.length > 0) {
+        visibleProductsQuery.satelliteId = { $in: satelliteIds };
+      }
+
+      if (processingLevels && Array.isArray(processingLevels) && processingLevels.length > 0) {
+        visibleProductsQuery.processingLevel = { $in: processingLevels };
+      }
+
+      if (productCodes && Array.isArray(productCodes) && productCodes.length > 0) {
+        visibleProductsQuery.productId = { $in: productCodes };
+      }
+
+      const visibleProducts = await Product.find(visibleProductsQuery);
+      const visibleProductIds = visibleProducts.map(product => product._id);
+
+      // Add filter for visible products
+      query.product = { $in: visibleProductIds };
+    }
+
+    // Get all COGs that match the criteria so far (without spatial filtering)
+    // This could be optimized further, but we need all COGs to filter by spatial criteria
+    // and band information which isn't directly queryable at the MongoDB level
+    const allMatchingCogs = await CogModel.find(query);
+
+    // Filtering cogs by spatial criteria and bands
+    let filteredCogs = allMatchingCogs;
+
+    // Apply spatial filter if provided
+    if (spatialFilter) {
+      filteredCogs = filteredCogs.filter(cog => {
+        // Skip if no corner coordinates
+        if (!cog.cornerCoords) return false;
+
+        // Extract coordinates
+        const lats: number[] = [];
+        const lons: number[] = [];
+
+        if (cog.cornerCoords.upperLeft && cog.cornerCoords.lowerRight) {
+          // Take corner coordinates as any type to avoid TypeScript errors
+          const upperLeft = cog.cornerCoords.upperLeft as any;
+          const upperRight = cog.cornerCoords.upperRight as any;
+          const lowerLeft = cog.cornerCoords.lowerLeft as any;
+          const lowerRight = cog.cornerCoords.lowerRight as any;
+
+          if (upperLeft.lat) lats.push(upperLeft.lat);
+          if (upperLeft.lon) lons.push(upperLeft.lon);
+          if (upperRight && upperRight.lat) lats.push(upperRight.lat);
+          if (upperRight && upperRight.lon) lons.push(upperRight.lon);
+          if (lowerLeft && lowerLeft.lat) lats.push(lowerLeft.lat);
+          if (lowerLeft && lowerLeft.lon) lons.push(lowerLeft.lon);
+          if (lowerRight.lat) lats.push(lowerRight.lat);
+          if (lowerRight.lon) lons.push(lowerRight.lon);
+
+        }
+
+        if (lats.length === 0 || lons.length === 0) return false;
+
+        // Calculate bounds of this COG
+        const cogNorth = Math.max(...lats);
+        const cogSouth = Math.min(...lats);
+        const cogEast = Math.max(...lons);
+        const cogWest = Math.min(...lons);
+
+        // Check if bbox intersects with COG bounds
+        if (spatialFilter.bbox && spatialFilter.bbox.length === 4) {
+          const [west, south, east, north] = spatialFilter.bbox;
+
+          // Check if boxes overlap
+          return !(cogWest > east || cogEast < west || cogSouth > north || cogNorth < south);
+        }
+
+        // Check if point is inside COG bounds
+        if (spatialFilter.point && spatialFilter.point.lat && spatialFilter.point.lon) {
+          const { lat, lon } = spatialFilter.point;
+
+          return lat <= cogNorth && lat >= cogSouth && lon >= cogWest && lon <= cogEast;
+        }
+
+        return true;
+      });
+    }
+
+    // Apply band filter if provided
+    if (bands && Array.isArray(bands) && bands.length > 0) {
+      filteredCogs = filteredCogs.filter(cog => {
+        // Check if any of the requested bands are in this COG
+
+        // First check if the COG type matches any requested band
+        if (bands.includes(cog.type)) {
+          return true;
+        }
+
+        // Then check bands array
+        if (cog.bands && Array.isArray(cog.bands)) {
+          return cog.bands.some(band => {
+            if (band.description) {
+              const cleanBandName = band.description.replace(/^IMG_/, '');
+              return bands.includes(cleanBandName);
+            }
+            return false;
+          });
+        }
+
+        return false;
+      });
+    }
+
+    // Count total for pagination
+    const totalCount = filteredCogs.length;
+
+    // Sort the results
+    const sortMultiplier = sortOrder === 'asc' ? 1 : -1;
+    filteredCogs.sort((a: any, b: any) => {
+      return (a[sortBy] > b[sortBy] ? 1 : -1) * sortMultiplier;
+    });
+
+    // Apply pagination
+    const paginatedCogs = filteredCogs.slice(skip, skip + limit);
+
+    // Calculate pagination info
+    const totalPages = Math.ceil(totalCount / limit);
+    const currentPage = Math.floor(skip / limit) + 1;
+
+    res.status(200).json({
+      cogs: paginatedCogs,
+      totalCount,
+      page: currentPage,
+      totalPages
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Something went wrong");
+  }
+});
 
 export default metadataRouter;

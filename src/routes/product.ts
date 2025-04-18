@@ -669,4 +669,544 @@ productRouter.get("/:productId/satellite", async (req: Request, res: Response) =
     }
 });
 
+/**
+ * @swagger
+ * /api/product/advanced-search:
+ *   post:
+ *     summary: Advanced search for products based on multiple criteria
+ *     tags: [Products]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               satelliteIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array of satellite IDs to filter by
+ *               processingLevels:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array of processing levels to filter by
+ *               productCodes:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array of product codes to filter by
+ *               dateRange:
+ *                 type: object
+ *                 properties:
+ *                   startDate:
+ *                     type: string
+ *                     format: date-time
+ *                     description: Start date for filtering products by creation date
+ *                   endDate:
+ *                     type: string
+ *                     format: date-time
+ *                     description: End date for filtering products by creation date
+ *               showHidden:
+ *                 type: boolean
+ *                 description: Whether to include hidden products (default is false)
+ *               limit:
+ *                 type: integer
+ *                 description: Maximum number of products to return (default is 100)
+ *               skip:
+ *                 type: integer
+ *                 description: Number of products to skip for pagination (default is 0)
+ *               sortBy:
+ *                 type: string
+ *                 description: Field to sort by (e.g., createdAt, updatedAt)
+ *               sortOrder:
+ *                 type: string
+ *                 enum: [asc, desc]
+ *                 description: Sort order (asc or desc)
+ *     responses:
+ *       200:
+ *         description: Search results
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 products:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Product'
+ *                 totalCount:
+ *                   type: integer
+ *                   description: Total count of matching products
+ *                 page:
+ *                   type: integer
+ *                   description: Current page
+ *                 totalPages:
+ *                   type: integer
+ *                   description: Total number of pages
+ *       500:
+ *         description: Server error
+ */
+productRouter.post("/advanced-search", async (req: Request, res: Response) => {
+    try {
+        const {
+            satelliteIds,
+            processingLevels,
+            productCodes,
+            dateRange,
+            showHidden = false,
+            limit = 100,
+            skip = 0,
+            sortBy = "createdAt",
+            sortOrder = "desc"
+        } = req.body;
+
+        // Build query
+        const query: any = {};
+
+        // Add satellite filter
+        if (satelliteIds && Array.isArray(satelliteIds) && satelliteIds.length > 0) {
+            query.satelliteId = { $in: satelliteIds };
+        }
+
+        // Add processing level filter
+        if (processingLevels && Array.isArray(processingLevels) && processingLevels.length > 0) {
+            query.processingLevel = { $in: processingLevels };
+        }
+
+        // Add product code filter
+        if (productCodes && Array.isArray(productCodes) && productCodes.length > 0) {
+            query.productId = { $in: productCodes };
+        }
+
+        // Add date range filter
+        if (dateRange && dateRange.startDate && dateRange.endDate) {
+            query.createdAt = {
+                $gte: new Date(dateRange.startDate),
+                $lte: new Date(dateRange.endDate)
+            };
+        }
+
+        // Add visibility filter unless showHidden is true
+        if (!showHidden) {
+            query.isVisible = true;
+        }
+
+        // Count total matching products
+        const totalCount = await Product.countDocuments(query);
+
+        // Calculate total pages
+        const totalPages = Math.ceil(totalCount / limit);
+        const currentPage = Math.floor(skip / limit) + 1;
+
+        // Build sort options
+        const sortOptions: any = {};
+        sortOptions[sortBy] = sortOrder === "asc" ? 1 : -1;
+
+        // Execute query with pagination and sorting
+        const products = await Product.find(query)
+            .sort(sortOptions)
+            .skip(skip)
+            .limit(limit);
+
+        res.status(200).json({
+            products,
+            totalCount,
+            page: currentPage,
+            totalPages
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send("Something went wrong");
+    }
+});
+
+/**
+ * @swagger
+ * /api/product/compare:
+ *   post:
+ *     summary: Compare multiple products
+ *     tags: [Products]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - productIds
+ *             properties:
+ *               productIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array of product IDs to compare
+ *               includeHidden:
+ *                 type: boolean
+ *                 description: Whether to include hidden products in the comparison
+ *               includeCogMetadata:
+ *                 type: boolean
+ *                 description: Whether to include COG metadata in the comparison
+ *     responses:
+ *       200:
+ *         description: Comparison results
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 products:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Product'
+ *                 cogCounts:
+ *                   type: object
+ *                   additionalProperties:
+ *                     type: integer
+ *                 latestAcquisitions:
+ *                   type: object
+ *                   additionalProperties:
+ *                     type: string
+ *                     format: date-time
+ *                 comparison:
+ *                   type: object
+ *                   properties:
+ *                     commonBands:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                     uniqueBands:
+ *                       type: object
+ *                       additionalProperties:
+ *                         type: array
+ *                         items:
+ *                           type: string
+ *       400:
+ *         description: Invalid request - no product IDs provided
+ *       500:
+ *         description: Server error
+ */
+productRouter.post("/compare", async (req: Request, res: Response) => {
+    try {
+        const { productIds, includeHidden = false, includeCogMetadata = false } = req.body;
+
+        if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
+            return res.status(400).json({ error: "No product IDs provided for comparison" });
+        }
+
+        // Build query
+        const query: any = {
+            productId: { $in: productIds }
+        };
+
+        // Add visibility filter unless includeHidden is true
+        if (!includeHidden) {
+            query.isVisible = true;
+        }
+
+        // Get products
+        const products = await Product.find(query);
+
+        if (products.length === 0) {
+            return res.status(404).json({ error: "No matching products found" });
+        }
+
+        // Get COG data for each product
+        const productData = await Promise.all(products.map(async (product) => {
+            const cogs = await COG.find({ product: product._id });
+
+            // Extract unique bands from all COGs for this product
+            const bands = new Set<string>();
+            cogs.forEach(cog => {
+                // Add COG type as a band
+                if (cog.type) bands.add(cog.type);
+
+                // Add all bands from the COG
+                if (cog.bands && Array.isArray(cog.bands)) {
+                    cog.bands.forEach(band => {
+                        if (band.description) {
+                            // Remove "IMG_" prefix if it exists
+                            const cleanBandName = band.description.replace(/^IMG_/, '');
+                            bands.add(cleanBandName);
+                        }
+                    });
+                }
+            });
+
+            // Find latest acquisition date
+            const latestCog = cogs.length > 0 ?
+                cogs.reduce((latest, current) =>
+                    current.aquisition_datetime > latest.aquisition_datetime ? current : latest
+                    , cogs[0]) : null;
+
+            return {
+                productId: product.productId,
+                cogCount: cogs.length,
+                bands: Array.from(bands),
+                latestAcquisition: latestCog ? new Date(latestCog.aquisition_datetime).toISOString() : null,
+                cogMetadata: includeCogMetadata ? cogs.map(cog => ({
+                    id: cog._id,
+                    type: cog.type,
+                    aquisition_datetime: cog.aquisition_datetime,
+                    bands: cog.bands?.map(band => (band.description ? band.description.replace(/^IMG_/, '') : band.description
+                    )) || []
+                })) : undefined
+            };
+        }));
+
+        // Find common bands across all products
+        const allBandSets = productData.map(pd => new Set(pd.bands));
+        const commonBands = [...allBandSets[0]].filter(band =>
+            allBandSets.every(bandSet => bandSet.has(band))
+        );
+
+        // Find unique bands for each product
+        const uniqueBands: Record<string, string[]> = {};
+        productData.forEach(pd => {
+            uniqueBands[pd.productId] = pd.bands.filter(band => !commonBands.includes(band));
+        });
+
+        // Build response with comparison data
+        const cogCounts: Record<string, number> = {};
+        const latestAcquisitions: Record<string, string | null> = {};
+
+        productData.forEach(pd => {
+            cogCounts[pd.productId] = pd.cogCount;
+            latestAcquisitions[pd.productId] = pd.latestAcquisition;
+        });
+
+        res.status(200).json({
+            products,
+            cogCounts,
+            latestAcquisitions,
+            comparison: {
+                commonBands,
+                uniqueBands
+            },
+            cogMetadata: includeCogMetadata ?
+                productData.reduce((acc, pd) => {
+                    acc[pd.productId] = pd.cogMetadata;
+                    return acc;
+                }, {} as Record<string, any>) : undefined
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send("Something went wrong");
+    }
+});
+
+/**
+ * @swagger
+ * /api/product/analytics/temporal-distribution:
+ *   get:
+ *     summary: Get temporal distribution of COGs for products
+ *     tags: [Products]
+ *     parameters:
+ *       - in: query
+ *         name: satelliteId
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: Filter by satellite ID
+ *       - in: query
+ *         name: processingLevel
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: Filter by processing level
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         required: false
+ *         description: Start date for the analysis period (ISO format)
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         required: false
+ *         description: End date for the analysis period (ISO format)
+ *       - in: query
+ *         name: interval
+ *         schema:
+ *           type: string
+ *           enum: [hourly, daily, weekly, monthly]
+ *         required: false
+ *         description: Time interval for grouping (default is daily)
+ *       - in: query
+ *         name: showHidden
+ *         schema:
+ *           type: boolean
+ *         required: false
+ *         description: Whether to include hidden products (default is false)
+ *     responses:
+ *       200:
+ *         description: Temporal distribution of COGs
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 distribution:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       interval:
+ *                         type: string
+ *                         format: date-time
+ *                       count:
+ *                         type: integer
+ *                       processingLevels:
+ *                         type: object
+ *                         additionalProperties:
+ *                           type: integer
+ *                 total:
+ *                   type: integer
+ *       500:
+ *         description: Server error
+ */
+productRouter.get("/analytics/temporal-distribution", async (req: Request, res: Response) => {
+    try {
+        const {
+            satelliteId,
+            processingLevel,
+            startDate,
+            endDate,
+            interval = 'daily',
+            showHidden = false
+        } = req.query;
+
+        // Build base query for COGs
+        const cogQuery: any = {};
+
+        // Add satellite filter if provided
+        if (satelliteId) {
+            cogQuery.satelliteId = satelliteId;
+        }
+
+        // Add processing level filter if provided
+        if (processingLevel) {
+            cogQuery.processingLevel = processingLevel;
+        }
+
+        // Add date range filter if provided
+        if (startDate || endDate) {
+            cogQuery.aquisition_datetime = {};
+
+            if (startDate) {
+                cogQuery.aquisition_datetime.$gte = new Date(startDate as string).getTime();
+            }
+
+            if (endDate) {
+                cogQuery.aquisition_datetime.$lte = new Date(endDate as string).getTime();
+            }
+        }
+
+        // Handle visibility filter
+        if (showHidden === 'false' || !showHidden) {
+            // Get visible products first
+            const visibleProductsQuery: any = { isVisible: true };
+
+            if (satelliteId) {
+                visibleProductsQuery.satelliteId = satelliteId;
+            }
+
+            if (processingLevel) {
+                visibleProductsQuery.processingLevel = processingLevel;
+            }
+
+            const visibleProducts = await Product.find(visibleProductsQuery);
+            const visibleProductIds = visibleProducts.map(product => product._id);
+
+            // Add filter for visible products to COG query
+            cogQuery.product = { $in: visibleProductIds };
+        }
+
+        // Get all matching COGs
+        const cogs = await COG.find(cogQuery);
+
+        // Define grouping function based on interval
+        const getIntervalKey = (timestamp: number) => {
+            const date = new Date(timestamp);
+
+            switch (interval) {
+                case 'hourly':
+                    return new Date(
+                        date.getFullYear(),
+                        date.getMonth(),
+                        date.getDate(),
+                        date.getHours()
+                    ).toISOString();
+
+                case 'weekly':
+                    // Get the first day of the week (Sunday)
+                    const day = date.getDate() - date.getDay();
+                    return new Date(
+                        date.getFullYear(),
+                        date.getMonth(),
+                        day
+                    ).toISOString();
+
+                case 'monthly':
+                    return new Date(
+                        date.getFullYear(),
+                        date.getMonth(),
+                        1
+                    ).toISOString();
+
+                case 'daily':
+                default:
+                    return new Date(
+                        date.getFullYear(),
+                        date.getMonth(),
+                        date.getDate()
+                    ).toISOString();
+            }
+        };
+
+        // Group COGs by interval
+        const distributionMap = new Map<string, any>();
+
+        cogs.forEach(cog => {
+            const intervalKey = getIntervalKey(cog.aquisition_datetime);
+
+            if (!distributionMap.has(intervalKey)) {
+                distributionMap.set(intervalKey, {
+                    interval: intervalKey,
+                    count: 0,
+                    processingLevels: {}
+                });
+            }
+
+            const entry = distributionMap.get(intervalKey);
+            entry.count++;
+
+            // Count by processing level
+            if (cog.processingLevel) {
+                if (!entry.processingLevels[cog.processingLevel]) {
+                    entry.processingLevels[cog.processingLevel] = 0;
+                }
+                entry.processingLevels[cog.processingLevel]++;
+            }
+        });
+
+        // Convert map to array and sort by interval
+        const distribution = Array.from(distributionMap.values())
+            .sort((a, b) => new Date(a.interval).getTime() - new Date(b.interval).getTime());
+
+        res.status(200).json({
+            distribution,
+            total: cogs.length
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send("Something went wrong");
+    }
+});
+
+
 export default productRouter;
