@@ -12,6 +12,7 @@ import metadataRoutes from "./routes/metadata";
 import authRoutes from "./routes/auth";
 import usersRoutes from "./routes/users";
 import satelliteRouter from "./routes/satellite";
+import productRouter from "./routes/product";
 import { swaggerSpec } from "./swagger"; // path to your swagger.ts
 import swaggerUi from "swagger-ui-express";
 
@@ -51,6 +52,7 @@ app.use("/api/metadata", metadataRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/satellite", satelliteRouter);
+app.use("/api/product", productRouter);
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // app.get("*", (req:Request, res:Response)=>{

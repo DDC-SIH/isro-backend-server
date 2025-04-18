@@ -70,36 +70,22 @@ const metadataRouter = express.Router();
  *         aquisition_datetime:
  *           type: number
  *           description: Timestamp when the data was acquired
+ *         productCode:
+ *           type: string
+ *           description: Product code associated with the COG
+ *         product:
+ *           type: string
+ *           description: Reference to the product ID
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           description: Timestamp when the COG was created
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           description: Timestamp when the COG was last updated
  */
 
-/**
- * @swagger
- * /api/metadata/test-add:
- *   post:
- *     summary: Test endpoint to add a product
- *     tags: [Metadata]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *     responses:
- *       200:
- *         description: Test add successful
- *       500:
- *         description: Server error
- */
-metadataRouter.post("/test-add", async (req: Request, res: Response) => {
-  try {
-    const product = new Product(req.body);
-    product.save();
-    res.status(200).send("test add successful");
-  } catch (error) {
-    console.error(error);
-    res.status(500).send("Something is wrong");
-  }
-});
 
 /**
  * @swagger
@@ -153,6 +139,8 @@ metadataRouter.post("/test-add", async (req: Request, res: Response) => {
  *                 type: array
  *                 items:
  *                   type: object
+ *               product_code:
+ *                 type: string
  *     responses:
  *       200:
  *         description: Metadata saved successfully
@@ -189,6 +177,7 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
       cornerCoords,
       type,
       bands,
+      product_code,
     } = req.body;
     try {
       const data: any = {};
@@ -224,6 +213,61 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
     console.log("Timestamp: ", timestamp);
     console.log("Verifying Timestmap: ", convertFromTimestamp(timestamp));
 
+
+    // check product exists or not
+    let product = await Product.findOne({
+      productId: product_code,
+      satelliteId: satellite,
+    });
+    if (!product) {
+      product = new Product({
+        product_code,
+        satelliteId: satellite,
+        cogs: [],
+      });
+      await product.save();
+      await SatelliteModel.findOneAndUpdate(
+        {
+          satelliteId: satellite,
+        },
+        {
+          $addToSet: { products: product._id },
+        },
+        {
+          new: true,
+        }
+      ).exec();
+      console.log("Product created and added to satellite");
+    } else {
+      console.log("Product already exists");
+      // check if product is already added to satellite
+      const isProductAdded = product ? sat.products.some(
+        (productId) => productId.toString() === product?._id.toString()
+      ) : false;
+      if (!isProductAdded) {
+        await SatelliteModel.findOneAndUpdate(
+          {
+            satelliteId: satellite,
+          },
+          {
+            $addToSet: { products: product._id },
+          },
+          {
+            new: true,
+          }
+        ).exec();
+        console.log("Product added to satellite");
+      } else {
+        console.log("Product already added to satellite");
+      }
+    }
+    // check if product is already added to cog
+
+
+
+
+
+
     const newCog = new COG({
       // name,
       // description,
@@ -241,6 +285,8 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
       type,
       revision,
       aquisition_datetime: timestamp,
+      productCode: product_code,
+      product: product ? product._id : null,
     });
 
     await SatelliteModel.findOneAndUpdate(
@@ -254,7 +300,28 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
         new: true,
       }
     ).exec();
-    // }
+
+
+    // check if cog is already added to product
+    if (product) {
+
+      await Product.findOneAndUpdate(
+        {
+          productId: product_code,
+          satelliteId: satellite,
+        },
+        {
+          $addToSet: { cogs: newCog._id },
+        },
+        {
+          new: true,
+        }
+      ).exec();
+      console.log("COG added to product");
+
+    }
+    // Save the new COG to the database
+    console.log("Saving new COG to database");
     await newCog.save();
 
     res.status(200).send({
@@ -273,6 +340,13 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
  *   get:
  *     summary: Get all COGs
  *     tags: [Metadata]
+ *     parameters:
+ *       - in: query
+ *         name: showHidden
+ *         schema:
+ *           type: boolean
+ *         required: false
+ *         description: Whether to include COGs from hidden products (default is false)
  *     responses:
  *       200:
  *         description: List of all COGs
@@ -292,7 +366,22 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
  */
 metadataRouter.get("/cog/all", async (req: Request, res: Response) => {
   try {
-    const cogList = await CogModel.find();
+    const showHidden = req.query.showHidden === 'true';
+
+    let cogList;
+
+    if (showHidden) {
+      // If showHidden is true, get all COGs
+      cogList = await CogModel.find();
+    } else {
+      // Otherwise, get only COGs from visible products
+      // First, get all visible products
+      const visibleProducts = await Product.find({ isVisible: true });
+      const visibleProductIds = visibleProducts.map(product => product._id);
+
+      // Then get COGs associated with those products
+      cogList = await CogModel.find({ product: { $in: visibleProductIds } });
+    }
 
     res.status(200).json({
       message: "Retrieved Data Successfully",
@@ -303,6 +392,8 @@ metadataRouter.get("/cog/all", async (req: Request, res: Response) => {
     res.status(500).send("Something is wrong");
   }
 });
+
+
 
 /**
  * @swagger
@@ -317,6 +408,12 @@ metadataRouter.get("/cog/all", async (req: Request, res: Response) => {
  *           type: string
  *         required: true
  *         description: The satellite ID (e.g., 3R)
+ *       - in: query
+ *         name: showHidden
+ *         schema:
+ *           type: boolean
+ *         required: false
+ *         description: Whether to include COGs from hidden products (default is false)
  *     responses:
  *       200:
  *         description: List of all COGs for the specified satellite
@@ -336,9 +433,29 @@ metadataRouter.get("/cog/all", async (req: Request, res: Response) => {
  */
 metadataRouter.get("/:satId/cog/all", async (req: Request, res: Response) => {
   const satId = req.params.satId;
+  const showHidden = req.query.showHidden === 'true';
 
   try {
-    const cogList = await CogModel.find({ satelliteId: satId });
+    let cogList;
+
+    if (showHidden) {
+      // If showHidden is true, get all COGs for this satellite
+      cogList = await CogModel.find({ satelliteId: satId });
+    } else {
+      // Otherwise, get only COGs from visible products
+      // First, get all visible products for this satellite
+      const visibleProducts = await Product.find({
+        satelliteId: satId,
+        isVisible: true
+      });
+      const visibleProductIds = visibleProducts.map(product => product._id);
+
+      // Then get COGs associated with those products
+      cogList = await CogModel.find({
+        satelliteId: satId,
+        product: { $in: visibleProductIds }
+      });
+    }
 
     res.status(200).json({
       message: "Retrieved Data Successfully",
@@ -349,6 +466,113 @@ metadataRouter.get("/:satId/cog/all", async (req: Request, res: Response) => {
     res.status(500).send("Something is wrong");
   }
 });
+
+
+/**
+ * @swagger
+ * /api/metadata/{satId}/{processingLevel}/{productCode}/cog/all:
+ *   get:
+ *     summary: Get all COGs for a specific satellite and product code
+ *     tags: [Metadata]
+ *     parameters:
+ *       - in: path
+ *         name: satId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The satellite ID (e.g., 3R)
+ *       - in: path
+ *         name: processingLevel
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The processing level (e.g., L1B)
+ *       - in: path
+ *         name: productCode
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The product code (e.g., HMK)
+ *       - in: query
+ *         name: showHidden
+ *         schema:
+ *           type: boolean
+ *         required: false
+ *         description: Whether to include COGs from hidden products (default is false)
+ *     responses:
+ *       200:
+ *         description: List of all COGs for the specified satellite and product code
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 cogs:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/COG'
+ *       500:
+ *         description: Server error
+ *       400:
+ *         description: Satellite ID or product code is required
+ */
+metadataRouter.get(
+  "/:satId/:processingLevel/:productCode/cog/all",
+  async (req: Request, res: Response) => {
+    const satId = req.params.satId;
+    const processingLevel = req.params.processingLevel;
+    const productCode = req.params.productCode;
+    const showHidden = req.query.showHidden === 'true';
+
+    if (!satId || !productCode) {
+      return res.status(400).json({ message: "Satellite ID and product code are required" });
+    }
+
+    try {
+      let cogList;
+
+      // Build query for COGs
+      const baseQuery = {
+        satelliteId: satId,
+        processingLevel: processingLevel,
+        productCode: productCode,
+      };
+
+      if (!showHidden) {
+        // If showHidden is false, check if the product is visible
+        const product = await Product.findOne({
+          satelliteId: satId,
+          productId: productCode,
+          processingLevel: processingLevel,
+          isVisible: true
+        });
+
+        if (!product) {
+          // If product is not visible or doesn't exist, return empty array
+          return res.status(200).json({
+            message: "Retrieved Data Successfully",
+            cogs: [],
+          });
+        }
+      }
+
+      // Get the COGs with filters
+      cogList = await CogModel.find(baseQuery);
+
+      res.status(200).json({
+        message: "Retrieved Data Successfully",
+        cogs: cogList,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).send("Something is wrong");
+    }
+  }
+);
+
+
 
 /**
  * @swagger
@@ -363,6 +587,12 @@ metadataRouter.get("/:satId/cog/all", async (req: Request, res: Response) => {
  *           type: string
  *         required: true
  *         description: The COG ID
+ *       - in: query
+ *         name: showHidden
+ *         schema:
+ *           type: boolean
+ *         required: false
+ *         description: Whether to show COG from hidden products (default is false)
  *     responses:
  *       200:
  *         description: COG details
@@ -370,12 +600,27 @@ metadataRouter.get("/:satId/cog/all", async (req: Request, res: Response) => {
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/COG'
+ *       404:
+ *         description: COG not found or belongs to a hidden product
  *       500:
  *         description: Server error
  */
 metadataRouter.get("/cog/info/:id", async (req: Request, res: Response) => {
   try {
+    const showHidden = req.query.showHidden === 'true';
     const cog = await CogModel.findById(req.params.id);
+
+    if (!cog) {
+      return res.status(404).json({ message: "COG not found" });
+    }
+
+    if (!showHidden && cog.product) {
+      // Check if the product is visible
+      const product = await Product.findOne({ productId: cog.productCode });
+      if (product && !product.isVisible) {
+        return res.status(404).json({ message: "COG belongs to a hidden product" });
+      }
+    }
 
     res.status(200).json(cog);
   } catch (error) {
@@ -417,6 +662,24 @@ metadataRouter.get("/cog/info/:id", async (req: Request, res: Response) => {
  *           type: string
  *         required: false
  *         description: Filter by processing level (e.g., L1B)
+ *       - in: query
+ *         name: productCode
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: Filter by product code
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: Filter by COG type (e.g., VIS, IR)
+ *       - in: query
+ *         name: showHidden
+ *         schema:
+ *           type: boolean
+ *         required: false
+ *         description: Whether to include COGs from hidden products (default is false)
  *     responses:
  *       200:
  *         description: List of COGs within the specified range
@@ -433,9 +696,11 @@ metadataRouter.get("/cog/info/:id", async (req: Request, res: Response) => {
  */
 metadataRouter.get("/:satId/cog/range", async (req: Request, res: Response) => {
   try {
-    const { start, end, processingLevel } = req.query;
+    const { start, end, processingLevel, productCode, type } = req.query;
+    const showHidden = req.query.showHidden === 'true';
+
     if (!start || !end) {
-      return res.status(400).json({ message: "start adn end time required" });
+      return res.status(400).json({ message: "start and end time required" });
     }
     const satId = req.params.satId;
 
@@ -445,10 +710,44 @@ metadataRouter.get("/:satId/cog/range", async (req: Request, res: Response) => {
       aquisition_datetime: { $gte: startDate, $lte: endDate },
       satelliteId: satId,
     };
+
     if (processingLevel) {
-      filter = { ...filter, processingLevel: processingLevel };
+      filter.processingLevel = processingLevel;
     }
-    const cogs = await CogModel.find(filter);
+
+    if (productCode) {
+      filter.productCode = productCode;
+    }
+
+    if (type) {
+      filter.type = type;
+    }
+
+    let cogs;
+
+    if (!showHidden) {
+      // Get visible products
+      const visibleProductQuery: any = {
+        satelliteId: satId,
+        isVisible: true
+      };
+
+      if (processingLevel) {
+        visibleProductQuery.processingLevel = processingLevel;
+      }
+
+      if (productCode) {
+        visibleProductQuery.productId = productCode;
+      }
+
+      const visibleProducts = await Product.find(visibleProductQuery);
+      const visibleProductIds = visibleProducts.map(product => product._id);
+
+      // Add filter for visible products
+      filter.product = { $in: visibleProductIds };
+    }
+
+    cogs = await CogModel.find(filter);
     res.status(200).json(cogs);
   } catch (error) {
     console.error(error);
@@ -482,6 +781,12 @@ metadataRouter.get("/:satId/cog/range", async (req: Request, res: Response) => {
  *           type: integer
  *         required: false
  *         description: Number of COGs to return
+ *       - in: query
+ *         name: showHidden
+ *         schema:
+ *           type: boolean
+ *         required: false
+ *         description: Whether to include COGs from hidden products (default is false)
  *     responses:
  *       200:
  *         description: List of latest COGs
@@ -499,6 +804,7 @@ metadataRouter.get("/:satId/cog/range", async (req: Request, res: Response) => {
 metadataRouter.get("/:satId/cog/last", async (req: Request, res: Response) => {
   try {
     const { timestamp, count } = req.query;
+    const showHidden = req.query.showHidden === 'true';
 
     const limit = count ? parseInt(count as string, 10) : DEFAULT_FRAME_COUNT;
 
@@ -509,14 +815,27 @@ metadataRouter.get("/:satId/cog/last", async (req: Request, res: Response) => {
     }
     const satId = req.params.satId;
 
-    const query = timestamp
+    const query: any = timestamp
       ? {
-          aquisition_datetime: {
-            $lte: new Date(timestamp as string).getTime(),
-          },
-          satelliteId: satId,
-        }
+        aquisition_datetime: {
+          $lte: new Date(timestamp as string).getTime(),
+        },
+        satelliteId: satId,
+      }
       : { satelliteId: satId };
+
+    if (!showHidden) {
+      // Get visible products for this satellite
+      const visibleProducts = await Product.find({
+        satelliteId: satId,
+        isVisible: true
+      });
+      const visibleProductIds = visibleProducts.map(product => product._id);
+
+      // Add filter for visible products
+      query.product = { $in: visibleProductIds };
+    }
+
     const cogs = await CogModel.find(query)
       .sort({ aquisition_datetime: -1 })
       .limit(limit);
@@ -559,6 +878,18 @@ metadataRouter.get("/:satId/cog/last", async (req: Request, res: Response) => {
  *           type: string
  *         required: false
  *         description: Filter by processing level (e.g., L1B)
+ *       - in: query
+ *         name: productCode
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: Filter by product code
+ *       - in: query
+ *         name: showHidden
+ *         schema:
+ *           type: boolean
+ *         required: false
+ *         description: Whether to include COGs from hidden products (default is false)
  *     responses:
  *       200:
  *         description: COG details
@@ -586,7 +917,8 @@ metadataRouter.get("/:satId/cog/last", async (req: Request, res: Response) => {
 metadataRouter.get("/:satId/cog/show", async (req: Request, res: Response) => {
   try {
     const satId = req.params.satId;
-    const { datetime, type, processingLevel } = req.query;
+    const { datetime, type, processingLevel, productCode } = req.query;
+    const showHidden = req.query.showHidden === 'true';
 
     const timestamp = datetime
       ? new Date(datetime as string).getTime()
@@ -596,7 +928,30 @@ metadataRouter.get("/:satId/cog/show", async (req: Request, res: Response) => {
       satelliteId: satId,
       ...(processingLevel && { processingLevel: processingLevel }),
       ...(type && { type: type }),
+      ...(productCode && { productCode: productCode }),
     };
+
+    if (!showHidden) {
+      // Get visible products for this satellite
+      const visibleProductQuery: any = {
+        satelliteId: satId,
+        isVisible: true
+      };
+
+      if (processingLevel) {
+        visibleProductQuery.processingLevel = processingLevel;
+      }
+
+      if (productCode) {
+        visibleProductQuery.productId = productCode;
+      }
+
+      const visibleProducts = await Product.find(visibleProductQuery);
+      const visibleProductIds = visibleProducts.map(product => product._id);
+
+      // Add filter for visible products
+      query.product = { $in: visibleProductIds };
+    }
 
     let cog;
     if (timestamp) {
@@ -643,6 +998,12 @@ metadataRouter.get("/:satId/cog/show", async (req: Request, res: Response) => {
  *           type: string
  *         required: false
  *         description: Filter by processing level (e.g., L1B)
+ *       - in: query
+ *         name: showHidden
+ *         schema:
+ *           type: boolean
+ *         required: false
+ *         description: Whether to include times from hidden products (default is false)
  *     responses:
  *       200:
  *         description: Available times for the satellite
@@ -675,6 +1036,8 @@ metadataRouter.get(
     try {
       const satId = req.params.satId;
       const { date, processingLevel } = req.query;
+      const showHidden = req.query.showHidden === 'true';
+
       const timestamp = date ? new Date(date as string).getTime() : undefined;
       const query: any = {
         satelliteId: satId,
@@ -695,6 +1058,25 @@ metadataRouter.get(
           $lte: endOfDay,
         };
       }
+
+      if (!showHidden) {
+        // Get visible products for this satellite
+        const visibleProductQuery: any = {
+          satelliteId: satId,
+          isVisible: true
+        };
+
+        if (processingLevel) {
+          visibleProductQuery.processingLevel = processingLevel;
+        }
+
+        const visibleProducts = await Product.find(visibleProductQuery);
+        const visibleProductIds = visibleProducts.map(product => product._id);
+
+        // Add filter for visible products
+        query.product = { $in: visibleProductIds };
+      }
+
       const cogs = await CogModel.find(query).sort({ aquisition_datetime: 1 });
       // Extract unique timestamps from cogs
       const uniqueTimestamps = [
@@ -735,6 +1117,12 @@ metadataRouter.get(
  *           type: string
  *         required: false
  *         description: Filter by processing level (e.g., L1B)
+ *       - in: query
+ *         name: showHidden
+ *         schema:
+ *           type: boolean
+ *         required: false
+ *         description: Whether to include dates from hidden products (default is false)
  *     responses:
  *       200:
  *         description: Available dates for the satellite
@@ -767,10 +1155,31 @@ metadataRouter.get(
     try {
       const satId = req.params.satId;
       const { processingLevel } = req.query;
+      const showHidden = req.query.showHidden === 'true';
+
       const query: any = {
         satelliteId: satId,
         ...(processingLevel && { processingLevel: processingLevel }),
       };
+
+      if (!showHidden) {
+        // Get visible products for this satellite
+        const visibleProductQuery: any = {
+          satelliteId: satId,
+          isVisible: true
+        };
+
+        if (processingLevel) {
+          visibleProductQuery.processingLevel = processingLevel;
+        }
+
+        const visibleProducts = await Product.find(visibleProductQuery);
+        const visibleProductIds = visibleProducts.map(product => product._id);
+
+        // Add filter for visible products
+        query.product = { $in: visibleProductIds };
+      }
+
       const cogs = await CogModel.find(query).sort({ aquisition_datetime: 1 });
       // Extract unique dates from cogs
       const uniqueDates = [
