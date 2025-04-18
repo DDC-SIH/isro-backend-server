@@ -2867,4 +2867,144 @@ metadataRouter.post("/cog/search", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/metadata/{satId}/products-with-latest-cogs:
+ *   get:
+ *     summary: Get products list for a specific satellite
+ *     tags: [Metadata]
+ *     parameters:
+ *       - in: path
+ *         name: satId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The satellite ID (e.g., 3R)
+ *       - in: query
+ *         name: processingLevel
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: Filter by processing level (e.g., L1B)
+ *       - in: query
+ *         name: showHidden
+ *         schema:
+ *           type: boolean
+ *         required: false
+ *         description: Whether to include hidden products (default is false)
+ *     responses:
+ *       200:
+ *         description: List of products for the satellite
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 products:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       _id:
+ *                         type: string
+ *                       productId:
+ *                         type: string
+ *                       satelliteId:
+ *                         type: string
+ *                       processingLevel:
+ *                         type: string
+ *                       isVisible:
+ *                         type: boolean
+ *                       cogCount:
+ *                         type: integer
+ *                       latestCog:
+ *                         type: object
+ *                       bandTypes:
+ *                         type: array
+ *                         items:
+ *                           type: string
+ *       500:
+ *         description: Server error
+ */
+metadataRouter.get(
+  "/:satId/products-with-latest-cogs",
+  async (req: Request, res: Response) => {
+    try {
+      const satId = req.params.satId;
+      const { processingLevel, showHidden } = req.query;
+
+      // Build query for products
+      const query: any = {
+        satelliteId: satId,
+      };
+
+      // Add processing level filter if provided
+      if (processingLevel) {
+        query.processingLevel = processingLevel;
+      }
+
+      // Add visibility filter unless showHidden is true
+      if (showHidden !== 'true') {
+        query.isVisible = true;
+      }
+
+      // Get products
+      const products = await Product.find(query);
+
+      // Enhance product data with additional information
+      const enhancedProducts = await Promise.all(products.map(async (product) => {
+        // Get count of COGs for this product
+        const cogCount = await CogModel.countDocuments({ product: product._id });
+
+        // Get the latest COG for this product
+        const latestCog = await CogModel.findOne({ product: product._id })
+          .sort({ aquisition_datetime: -1 })
+          .limit(1);
+
+        // Get distinct band types for this product
+        const cogs = await CogModel.find({ product: product._id });
+        const bandTypes = new Set<string>();
+
+        cogs.forEach(cog => {
+          // Add COG type
+          if (cog.type) {
+            bandTypes.add(cog.type);
+          }
+
+          // Add band descriptions
+          if (cog.bands && Array.isArray(cog.bands)) {
+            cog.bands.forEach(band => {
+              if (band.description) {
+                const cleanBandName = band.description.replace(/^IMG_/, '');
+                bandTypes.add(cleanBandName);
+              }
+            });
+          }
+        });
+
+        return {
+          _id: product._id,
+          productId: product.productId,
+          satelliteId: product.satelliteId,
+          processingLevel: product.processingLevel,
+          isVisible: product.isVisible,
+          cogCount,
+          latestCog,
+          bandTypes: Array.from(bandTypes),
+          latestAcquisition: latestCog ? convertFromTimestamp(latestCog.aquisition_datetime) : null,
+        };
+      }));
+
+      res.status(200).json({
+        products: enhancedProducts,
+        count: enhancedProducts.length
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).send("Something is wrong");
+    }
+  }
+);
+
+
 export default metadataRouter;
