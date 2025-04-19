@@ -3007,4 +3007,746 @@ metadataRouter.get(
 );
 
 
+/**
+ * @swagger
+ * /api/metadata/comparative-analysis:
+ *   post:
+ *     summary: Compare satellite imagery metadata between two time periods
+ *     tags: [Metadata]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               satelliteIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array of satellite IDs to include in comparison
+ *               firstPeriod:
+ *                 type: object
+ *                 required: true
+ *                 properties:
+ *                   start:
+ *                     type: string
+ *                     format: date-time
+ *                     description: Start of first time period (ISO format)
+ *                   end:
+ *                     type: string
+ *                     format: date-time
+ *                     description: End of first time period (ISO format)
+ *               secondPeriod:
+ *                 type: object
+ *                 required: true
+ *                 properties:
+ *                   start:
+ *                     type: string
+ *                     format: date-time
+ *                     description: Start of second time period (ISO format)
+ *                   end:
+ *                     type: string
+ *                     format: date-time
+ *                     description: End of second time period (ISO format)
+ *               processingLevels:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Processing levels to include in comparison
+ *               bandTypes:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Band types to include in comparison
+ *               region:
+ *                 type: object
+ *                 properties:
+ *                   bbox:
+ *                     type: array
+ *                     items:
+ *                       type: number
+ *                     description: Bounding box [west, south, east, north] to limit comparison
+ *               metrics:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   enum: [count, coverage, file_size, acquisition_frequency, temporal_distribution]
+ *                 description: Metrics to include in the comparison
+ *               showHidden:
+ *                 type: boolean
+ *                 description: Whether to include hidden products
+ *     responses:
+ *       200:
+ *         description: Comparison results
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 firstPeriod:
+ *                   type: object
+ *                   properties:
+ *                     metrics:
+ *                       type: object
+ *                     satellites:
+ *                       type: object
+ *                 secondPeriod:
+ *                   type: object
+ *                   properties:
+ *                     metrics:
+ *                       type: object
+ *                     satellites:
+ *                       type: object
+ *                 comparison:
+ *                   type: object
+ *                   description: Percentage changes and statistical comparisons
+ *       400:
+ *         description: Invalid request parameters
+ *       500:
+ *         description: Server error
+ */
+metadataRouter.post("/comparative-analysis", async (req: Request, res: Response) => {
+  try {
+    const {
+      satelliteIds,
+      firstPeriod,
+      secondPeriod,
+      processingLevels,
+      bandTypes,
+      region,
+      metrics = ['count', 'coverage', 'file_size', 'acquisition_frequency'],
+      showHidden = false
+    } = req.body;
+
+    // Validate required parameters
+    if (!firstPeriod || !secondPeriod || !firstPeriod.start || !firstPeriod.end || !secondPeriod.start || !secondPeriod.end) {
+      return res.status(400).json({ message: "Both time periods with start and end dates are required" });
+    }
+
+    // Parse period dates
+    const firstStart = new Date(firstPeriod.start).getTime();
+    const firstEnd = new Date(firstPeriod.end).getTime();
+    const secondStart = new Date(secondPeriod.start).getTime();
+    const secondEnd = new Date(secondPeriod.end).getTime();
+
+    if (isNaN(firstStart) || isNaN(firstEnd) || isNaN(secondStart) || isNaN(secondEnd)) {
+      return res.status(400).json({ message: "Invalid date format" });
+    }
+
+    // Function to build query for a time period
+    const buildQuery = (startTime: number, endTime: number) => {
+      const query: any = {
+        aquisition_datetime: {
+          $gte: startTime,
+          $lte: endTime
+        }
+      };
+
+      // Add satellite filter if provided
+      if (satelliteIds && Array.isArray(satelliteIds) && satelliteIds.length > 0) {
+        query.satelliteId = { $in: satelliteIds };
+      }
+
+      // Add processing level filter if provided
+      if (processingLevels && Array.isArray(processingLevels) && processingLevels.length > 0) {
+        query.processingLevel = { $in: processingLevels };
+      }
+
+      // Handle visibility filter
+      if (!showHidden) {
+        // We'll handle this with a separate query to get visible product IDs
+        // and then filter COGs based on those products
+      }
+
+      return query;
+    };
+
+    // Build queries for both periods
+    const firstPeriodQuery = buildQuery(firstStart, firstEnd);
+    const secondPeriodQuery = buildQuery(secondStart, secondEnd);
+
+    // If not showing hidden products, get visible product IDs to filter with
+    if (!showHidden) {
+      const visibleProductsQuery: any = { isVisible: true };
+
+      if (satelliteIds && Array.isArray(satelliteIds) && satelliteIds.length > 0) {
+        visibleProductsQuery.satelliteId = { $in: satelliteIds };
+      }
+
+      if (processingLevels && Array.isArray(processingLevels) && processingLevels.length > 0) {
+        visibleProductsQuery.processingLevel = { $in: processingLevels };
+      }
+
+      const visibleProducts = await Product.find(visibleProductsQuery);
+      const visibleProductIds = visibleProducts.map(product => product._id);
+
+      firstPeriodQuery.product = { $in: visibleProductIds };
+      secondPeriodQuery.product = { $in: visibleProductIds };
+    }
+
+    // Get COGs for both periods
+    const firstPeriodCogs = await CogModel.find(firstPeriodQuery);
+    const secondPeriodCogs = await CogModel.find(secondPeriodQuery);
+
+    // Filter by band types if specified
+    const filterByBandTypes = (cogs: any[]) => {
+      if (!bandTypes || !Array.isArray(bandTypes) || bandTypes.length === 0) {
+        return cogs;
+      }
+
+      return cogs.filter(cog => {
+        // Check if COG type matches any requested band type
+        if (cog.type && bandTypes.includes(cog.type)) {
+          return true;
+        }
+
+        // Check bands array
+        if (cog.bands && Array.isArray(cog.bands)) {
+          return cog.bands.some((band:any) => {
+            if (band.description) {
+              const cleanBandName = band.description.replace(/^IMG_/, '');
+              return bandTypes.includes(cleanBandName);
+            }
+            return false;
+          });
+        }
+
+        return false;
+      });
+    };
+
+    // Apply band type filtering
+    const filteredFirstPeriodCogs = filterByBandTypes(firstPeriodCogs);
+    const filteredSecondPeriodCogs = filterByBandTypes(secondPeriodCogs);
+
+    // Apply spatial filtering if region is specified
+    const filterByRegion = (cogs: any[]) => {
+      if (!region || !region.bbox || !Array.isArray(region.bbox) || region.bbox.length !== 4) {
+        return cogs;
+      }
+
+      const [west, south, east, north] = region.bbox;
+
+      return cogs.filter(cog => {
+        // Skip if no corner coordinates
+        if (!cog.cornerCoords) return false;
+
+        // Extract coordinates
+        const lats: number[] = [];
+        const lons: number[] = [];
+
+        if (cog.cornerCoords.upperLeft && cog.cornerCoords.lowerRight) {
+          const upperLeft = cog.cornerCoords.upperLeft as any;
+          const upperRight = cog.cornerCoords.upperRight as any;
+          const lowerLeft = cog.cornerCoords.lowerLeft as any;
+          const lowerRight = cog.cornerCoords.lowerRight as any;
+
+          if (upperLeft.lat) lats.push(upperLeft.lat);
+          if (upperLeft.lon) lons.push(upperLeft.lon);
+          if (upperRight && upperRight.lat) lats.push(upperRight.lat);
+          if (upperRight && upperRight.lon) lons.push(upperRight.lon);
+          if (lowerLeft && lowerLeft.lat) lats.push(lowerLeft.lat);
+          if (lowerLeft && lowerLeft.lon) lons.push(lowerLeft.lon);
+          if (lowerRight.lat) lats.push(lowerRight.lat);
+          if (lowerRight.lon) lons.push(lowerRight.lon);
+        }
+
+        if (lats.length === 0 || lons.length === 0) return false;
+
+        // Calculate bounds of this COG
+        const cogNorth = Math.max(...lats);
+        const cogSouth = Math.min(...lats);
+        const cogEast = Math.max(...lons);
+        const cogWest = Math.min(...lons);
+
+        // Check if bbox intersects with COG bounds
+        return !(cogWest > east || cogEast < west || cogSouth > north || cogNorth < south);
+      });
+    };
+
+    // Apply spatial filtering
+    const finalFirstPeriodCogs = filterByRegion(filteredFirstPeriodCogs);
+    const finalSecondPeriodCogs = filterByRegion(filteredSecondPeriodCogs);
+
+    // Calculate metrics for first period
+    const firstPeriodMetrics: any = {
+      count: finalFirstPeriodCogs.length,
+      satellites: {},
+      processingLevels: {},
+      bandTypes: {},
+      totalSize: 0,
+      averageSize: 0,
+      temporalDistribution: {},
+      spatialCoverage: 0
+    };
+
+    // Calculate metrics for second period
+    const secondPeriodMetrics: any = {
+      count: finalSecondPeriodCogs.length,
+      satellites: {},
+      processingLevels: {},
+      bandTypes: {},
+      totalSize: 0,
+      averageSize: 0,
+      temporalDistribution: {},
+      spatialCoverage: 0
+    };
+
+    // Calculate detailed metrics for each period
+    const calculateDetailedMetrics = (cogs: any[], metrics: any, periodLengthMs: number) => {
+      // Count by satellite
+      cogs.forEach(cog => {
+        // Satellite counts
+        metrics.satellites[cog.satelliteId] = (metrics.satellites[cog.satelliteId] || 0) + 1;
+
+        // Processing level counts
+        if (cog.processingLevel) {
+          metrics.processingLevels[cog.processingLevel] = (metrics.processingLevels[cog.processingLevel] || 0) + 1;
+        }
+
+        // Band type counts
+        if (cog.type) {
+          metrics.bandTypes[cog.type] = (metrics.bandTypes[cog.type] || 0) + 1;
+        }
+
+        // Size calculations
+        if (cog.size) {
+          metrics.totalSize += cog.size;
+        }
+
+        // Temporal distribution (by day)
+        if (cog.aquisition_datetime) {
+          const dateKey = new Date(cog.aquisition_datetime).toISOString().split('T')[0];
+          metrics.temporalDistribution[dateKey] = (metrics.temporalDistribution[dateKey] || 0) + 1;
+        }
+
+        // Calculate spatial coverage if available
+        if (cog.coverage) {
+          metrics.spatialCoverage += cog.coverage;
+        }
+      });
+
+      // Calculate averages
+      metrics.averageSize = metrics.count > 0 ? metrics.totalSize / metrics.count : 0;
+
+      // Calculate acquisition frequency (acquisitions per day)
+      const periodDays = periodLengthMs / (24 * 60 * 60 * 1000);
+      metrics.acquisitionFrequency = periodDays > 0 ? metrics.count / periodDays : 0;
+
+      // Sort temporal distribution
+      metrics.temporalDistribution = Object.entries(metrics.temporalDistribution)
+        .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
+        .reduce<Record<string, any>>((obj, [key, value]) => {
+          obj[key] = value;
+          return obj;
+        }, {});
+    };
+
+    // Calculate period lengths in milliseconds
+    const firstPeriodLength = firstEnd - firstStart;
+    const secondPeriodLength = secondEnd - secondStart;
+
+    // Calculate detailed metrics for both periods
+    calculateDetailedMetrics(finalFirstPeriodCogs, firstPeriodMetrics, firstPeriodLength);
+    calculateDetailedMetrics(finalSecondPeriodCogs, secondPeriodMetrics, secondPeriodLength);
+
+    // Calculate comparison metrics (percent changes)
+    const comparison: any = {
+      countChange: calculatePercentChange(firstPeriodMetrics.count, secondPeriodMetrics.count),
+      acquisitionFrequencyChange: calculatePercentChange(
+        firstPeriodMetrics.acquisitionFrequency,
+        secondPeriodMetrics.acquisitionFrequency
+      ),
+      averageSizeChange: calculatePercentChange(
+        firstPeriodMetrics.averageSize,
+        secondPeriodMetrics.averageSize
+      ),
+      totalSizeChange: calculatePercentChange(
+        firstPeriodMetrics.totalSize,
+        secondPeriodMetrics.totalSize
+      ),
+      spatialCoverageChange: calculatePercentChange(
+        firstPeriodMetrics.spatialCoverage,
+        secondPeriodMetrics.spatialCoverage
+      ),
+      satellites: {},
+      processingLevels: {},
+      bandTypes: {}
+    };
+
+    // Compare satellites
+    const allSatelliteIds = new Set([
+      ...Object.keys(firstPeriodMetrics.satellites),
+      ...Object.keys(secondPeriodMetrics.satellites)
+    ]);
+
+    allSatelliteIds.forEach(id => {
+      comparison.satellites[id] = calculatePercentChange(
+        firstPeriodMetrics.satellites[id] || 0,
+        secondPeriodMetrics.satellites[id] || 0
+      );
+    });
+
+    // Compare processing levels
+    const allProcessingLevels = new Set([
+      ...Object.keys(firstPeriodMetrics.processingLevels),
+      ...Object.keys(secondPeriodMetrics.processingLevels)
+    ]);
+
+    allProcessingLevels.forEach(level => {
+      comparison.processingLevels[level] = calculatePercentChange(
+        firstPeriodMetrics.processingLevels[level] || 0,
+        secondPeriodMetrics.processingLevels[level] || 0
+      );
+    });
+
+    // Compare band types
+    const allBandTypes = new Set([
+      ...Object.keys(firstPeriodMetrics.bandTypes),
+      ...Object.keys(secondPeriodMetrics.bandTypes)
+    ]);
+
+    allBandTypes.forEach(type => {
+      comparison.bandTypes[type] = calculatePercentChange(
+        firstPeriodMetrics.bandTypes[type] || 0,
+        secondPeriodMetrics.bandTypes[type] || 0
+      );
+    });
+
+    res.status(200).json({
+      firstPeriod: {
+        start: new Date(firstStart).toISOString(),
+        end: new Date(firstEnd).toISOString(),
+        metrics: firstPeriodMetrics
+      },
+      secondPeriod: {
+        start: new Date(secondStart).toISOString(),
+        end: new Date(secondEnd).toISOString(),
+        metrics: secondPeriodMetrics
+      },
+      comparison
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Something went wrong");
+  }
+});
+
+// Helper function to calculate percent change
+function calculatePercentChange(oldValue: number, newValue: number): number {
+  if (oldValue === 0) {
+    return newValue === 0 ? 0 : 100; // If old value is 0, and new value is not, that's a 100% increase
+  }
+  return ((newValue - oldValue) / Math.abs(oldValue)) * 100;
+}
+
+/**
+ * @swagger
+ * /api/metadata/geographic-coverage:
+ *   get:
+ *     summary: Get geographic coverage statistics for satellite imagery
+ *     tags: [Metadata]
+ *     parameters:
+ *       - in: query
+ *         name: satelliteIds
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: Comma-separated list of satellite IDs
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         required: false
+ *         description: Start date (ISO format)
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         required: false
+ *         description: End date (ISO format)
+ *       - in: query
+ *         name: processingLevels
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: Comma-separated list of processing levels
+ *       - in: query
+ *         name: gridSize
+ *         schema:
+ *           type: number
+ *         required: false
+ *         description: Size of grid cells in degrees (default is 1.0)
+ *       - in: query
+ *         name: showHidden
+ *         schema:
+ *           type: boolean
+ *         required: false
+ *         description: Whether to include COGs from hidden products
+ *     responses:
+ *       200:
+ *         description: Geographic coverage statistics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 bounds:
+ *                   type: object
+ *                   properties:
+ *                     north:
+ *                       type: number
+ *                     south:
+ *                       type: number
+ *                     east:
+ *                       type: number
+ *                     west:
+ *                       type: number
+ *                 coverage:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       lat:
+ *                         type: number
+ *                       lon:
+ *                         type: number
+ *                       count:
+ *                         type: number
+ *                       latest:
+ *                         type: string
+ *                         format: date-time
+ *                 totalImageCount:
+ *                   type: integer
+ *                 coveragePercent:
+ *                   type: number
+ *                 satelliteCoverage:
+ *                   type: object
+ *                   additionalProperties:
+ *                     type: object
+ *       400:
+ *         description: Invalid request parameters
+ *       500:
+ *         description: Server error
+ */
+metadataRouter.get("/geographic-coverage", async (req: Request, res: Response) => {
+  try {
+    const {
+      satelliteIds,
+      startDate,
+      endDate,
+      processingLevels,
+      gridSize = 1.0,
+      showHidden = false
+    } = req.query;
+
+    // Build base query
+    const query: any = {};
+
+    // Add time range filter if provided
+    if (startDate || endDate) {
+      query.aquisition_datetime = {};
+
+      if (startDate) {
+        query.aquisition_datetime.$gte = new Date(startDate as string).getTime();
+      }
+
+      if (endDate) {
+        query.aquisition_datetime.$lte = new Date(endDate as string).getTime();
+      }
+    }
+
+    // Add satellite filter if provided
+    if (satelliteIds) {
+      const satIds = (satelliteIds as string).split(',').map(id => id.trim());
+      if (satIds.length > 0) {
+        query.satelliteId = { $in: satIds };
+      }
+    }
+
+    // Add processing level filter if provided
+    if (processingLevels) {
+      const levels = (processingLevels as string).split(',').map(level => level.trim());
+      if (levels.length > 0) {
+        query.processingLevel = { $in: levels };
+      }
+    }
+
+    // Handle visibility filter
+    if (showHidden !== 'true') {
+      // Get visible products
+      const visibleProductsQuery: any = { isVisible: true };
+
+      if (satelliteIds) {
+        const satIds = (satelliteIds as string).split(',').map(id => id.trim());
+        if (satIds.length > 0) {
+          visibleProductsQuery.satelliteId = { $in: satIds };
+        }
+      }
+
+      if (processingLevels) {
+        const levels = (processingLevels as string).split(',').map(level => level.trim());
+        if (levels.length > 0) {
+          visibleProductsQuery.processingLevel = { $in: levels };
+        }
+      }
+
+      const visibleProducts = await Product.find(visibleProductsQuery);
+      const visibleProductIds = visibleProducts.map(product => product._id);
+
+      // Add filter for visible products
+      query.product = { $in: visibleProductIds };
+    }
+
+    // Get COGs matching the criteria
+    const cogs = await CogModel.find(query);
+
+    if (cogs.length === 0) {
+      return res.status(200).json({
+        bounds: { north: 0, south: 0, east: 0, west: 0 },
+        coverage: [],
+        totalImageCount: 0,
+        coveragePercent: 0,
+        satelliteCoverage: {}
+      });
+    }
+
+    // Initialize bounds and coverage grid
+    const bounds = {
+      north: -90,
+      south: 90,
+      east: -180,
+      west: 180
+    };
+
+    const grid = new Map<string, { lat: number, lon: number, count: number, latest: number, satellites: Set<string> }>();
+    const satelliteCoverage: Record<string, Set<string>> = {};
+    const gridSize_num = parseFloat(gridSize as string) || 1.0;
+
+    // Process COGs to build coverage grid
+    cogs.forEach(cog => {
+      // Skip if no corner coordinates
+      if (!cog.cornerCoords) return;
+
+      // Extract coordinates
+      const lats: number[] = [];
+      const lons: number[] = [];
+
+      if (cog.cornerCoords.upperLeft && cog.cornerCoords.lowerRight) {
+        const upperLeft = cog.cornerCoords.upperLeft as any;
+        const upperRight = cog.cornerCoords.upperRight as any;
+        const lowerLeft = cog.cornerCoords.lowerLeft as any;
+        const lowerRight = cog.cornerCoords.lowerRight as any;
+
+        if (upperLeft.lat) lats.push(upperLeft.lat);
+        if (upperLeft.lon) lons.push(upperLeft.lon);
+        if (upperRight && upperRight.lat) lats.push(upperRight.lat);
+        if (upperRight && upperRight.lon) lons.push(upperRight.lon);
+        if (lowerLeft && lowerLeft.lat) lats.push(lowerLeft.lat);
+        if (lowerLeft && lowerLeft.lon) lons.push(lowerLeft.lon);
+        if (lowerRight.lat) lats.push(lowerRight.lat);
+        if (lowerRight.lon) lons.push(lowerRight.lon);
+      }
+
+      if (lats.length === 0 || lons.length === 0) return;
+
+      // Calculate bounds of this COG
+      const cogNorth = Math.max(...lats);
+      const cogSouth = Math.min(...lats);
+      const cogEast = Math.max(...lons);
+      const cogWest = Math.min(...lons);
+
+      // Update overall bounds
+      bounds.north = Math.max(bounds.north, cogNorth);
+      bounds.south = Math.min(bounds.south, cogSouth);
+      bounds.east = Math.max(bounds.east, cogEast);
+      bounds.west = Math.min(bounds.west, cogWest);
+
+      // Add grid cells for this COG's coverage
+      for (let lat = Math.floor(cogSouth / gridSize_num) * gridSize_num; lat <= cogNorth; lat += gridSize_num) {
+        for (let lon = Math.floor(cogWest / gridSize_num) * gridSize_num; lon <= cogEast; lon += gridSize_num) {
+          // Round to grid size precision to avoid floating point issues
+          const gridLat = Math.round(lat / gridSize_num) * gridSize_num;
+          const gridLon = Math.round(lon / gridSize_num) * gridSize_num;
+          const gridKey = `${gridLat.toFixed(6)},${gridLon.toFixed(6)}`;
+
+          if (!grid.has(gridKey)) {
+            grid.set(gridKey, {
+              lat: gridLat,
+              lon: gridLon,
+              count: 0,
+              latest: 0,
+              satellites: new Set()
+            });
+          }
+
+          const cell = grid.get(gridKey)!;
+          cell.count++;
+          cell.satellites.add(cog.satelliteId);
+
+          if (cog.aquisition_datetime > cell.latest) {
+            cell.latest = cog.aquisition_datetime;
+          }
+
+          // Track satellite coverage
+          if (!satelliteCoverage[cog.satelliteId]) {
+            satelliteCoverage[cog.satelliteId] = new Set();
+          }
+          satelliteCoverage[cog.satelliteId].add(gridKey);
+        }
+      }
+    });
+
+    // Convert grid to array and format for response
+    const coverageArray = Array.from(grid.values()).map(cell => ({
+      lat: cell.lat,
+      lon: cell.lon,
+      count: cell.count,
+      latest: new Date(cell.latest).toISOString(),
+      satellites: Array.from(cell.satellites)
+    }));
+
+    // Calculate total potential grid cells in bounds
+    const latRange = Math.ceil((bounds.north - bounds.south) / gridSize_num);
+    const lonRange = Math.ceil((bounds.east - bounds.west) / gridSize_num);
+    const totalPotentialCells = latRange * lonRange;
+
+    // Calculate coverage percentage
+    const coveragePercent = totalPotentialCells > 0
+      ? (grid.size / totalPotentialCells) * 100
+      : 0;
+
+    // Format satellite coverage for response
+    const formattedSatelliteCoverage: Record<string, any> = {};
+    Object.entries(satelliteCoverage).forEach(([satId, gridKeys]) => {
+      formattedSatelliteCoverage[satId] = {
+        gridCellCount: gridKeys.size,
+        coveragePercent: totalPotentialCells > 0
+          ? (gridKeys.size / totalPotentialCells) * 100
+          : 0
+      };
+    });
+
+    res.status(200).json({
+      bounds,
+      coverage: coverageArray,
+      totalImageCount: cogs.length,
+      coveragePercent,
+      satelliteCoverage: formattedSatelliteCoverage,
+      gridParams: {
+        gridSize: gridSize_num,
+        totalPotentialCells,
+        coveredCells: grid.size
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Something went wrong");
+  }
+});
+
+
 export default metadataRouter;
