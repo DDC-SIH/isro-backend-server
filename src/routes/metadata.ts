@@ -3203,7 +3203,7 @@ metadataRouter.post("/comparative-analysis", async (req: Request, res: Response)
 
         // Check bands array
         if (cog.bands && Array.isArray(cog.bands)) {
-          return cog.bands.some((band:any) => {
+          return cog.bands.some((band: any) => {
             if (band.description) {
               const cleanBandName = band.description.replace(/^IMG_/, '');
               return bandTypes.includes(cleanBandName);
@@ -3275,10 +3275,8 @@ metadataRouter.post("/comparative-analysis", async (req: Request, res: Response)
       satellites: {},
       processingLevels: {},
       bandTypes: {},
-      totalSize: 0,
-      averageSize: 0,
+
       temporalDistribution: {},
-      spatialCoverage: 0
     };
 
     // Calculate metrics for second period
@@ -3287,10 +3285,7 @@ metadataRouter.post("/comparative-analysis", async (req: Request, res: Response)
       satellites: {},
       processingLevels: {},
       bandTypes: {},
-      totalSize: 0,
-      averageSize: 0,
       temporalDistribution: {},
-      spatialCoverage: 0
     };
 
     // Calculate detailed metrics for each period
@@ -3310,10 +3305,6 @@ metadataRouter.post("/comparative-analysis", async (req: Request, res: Response)
           metrics.bandTypes[cog.type] = (metrics.bandTypes[cog.type] || 0) + 1;
         }
 
-        // Size calculations
-        if (cog.size) {
-          metrics.totalSize += cog.size;
-        }
 
         // Temporal distribution (by day)
         if (cog.aquisition_datetime) {
@@ -3321,14 +3312,8 @@ metadataRouter.post("/comparative-analysis", async (req: Request, res: Response)
           metrics.temporalDistribution[dateKey] = (metrics.temporalDistribution[dateKey] || 0) + 1;
         }
 
-        // Calculate spatial coverage if available
-        if (cog.coverage) {
-          metrics.spatialCoverage += cog.coverage;
-        }
       });
 
-      // Calculate averages
-      metrics.averageSize = metrics.count > 0 ? metrics.totalSize / metrics.count : 0;
 
       // Calculate acquisition frequency (acquisitions per day)
       const periodDays = periodLengthMs / (24 * 60 * 60 * 1000);
@@ -3358,18 +3343,8 @@ metadataRouter.post("/comparative-analysis", async (req: Request, res: Response)
         firstPeriodMetrics.acquisitionFrequency,
         secondPeriodMetrics.acquisitionFrequency
       ),
-      averageSizeChange: calculatePercentChange(
-        firstPeriodMetrics.averageSize,
-        secondPeriodMetrics.averageSize
-      ),
-      totalSizeChange: calculatePercentChange(
-        firstPeriodMetrics.totalSize,
-        secondPeriodMetrics.totalSize
-      ),
-      spatialCoverageChange: calculatePercentChange(
-        firstPeriodMetrics.spatialCoverage,
-        secondPeriodMetrics.spatialCoverage
-      ),
+
+
       satellites: {},
       processingLevels: {},
       bandTypes: {}
