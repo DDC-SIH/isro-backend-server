@@ -142,7 +142,7 @@ satelliteRouter.get("/", async (req: Request, res: Response) => {
  */
 satelliteRouter.get("/:id", async (req: Request, res: Response) => {
   try {
-    const satellite = await Satellite.findById(req.params.id);
+    const satellite = await Satellite.findOne({ satelliteId: req.params.id });
     if (!satellite)
       return res.status(404).json({ error: "Satellite not found!" });
     res

@@ -3885,4 +3885,138 @@ metadataRouter.get("/geographic-coverage", async (req: Request, res: Response) =
 });
 
 
+// create a route to delete all cogs before the datetime
+/**
+ * @swagger
+ * /api/metadata/delete-cogs-before:
+ *   delete:
+ *     summary: Delete COGs before a specific date
+ *     tags: [Metadata]
+ *     parameters:
+ *       - in: query
+ *         name: date
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         required: true
+ *         description: Date in ISO format (e.g., 2023-01-01T00:00:00Z)
+ *     responses:
+ *       200:
+ *         description: COGs deleted successfully
+ *       400:
+ *         description: Invalid date format
+ *       500:
+ *         description: Server error
+ */
+metadataRouter.delete('/delete-cogs-before', async (req, res) => {
+  const { date } = req.query;
+
+
+  if (!date || isNaN(Date.parse(date as string))) {
+    return res.status(400).send("Invalid date format");
+  }
+
+  try {
+    const cutoffDate = new Date(date as string);
+    const cutoffTimestamp = cutoffDate.getTime();
+    // Find all COGs before the cutoff date
+    const cogsToDelete = await CogModel.find({ aquisition_datetime: { $lt: cutoffTimestamp } });
+    if (cogsToDelete.length === 0) {
+      return res.status(404).send("No COGs found before the specified date");
+    }
+    // Delete the COGs
+    await CogModel.deleteMany({ aquisition_datetime: { $lt: cutoffTimestamp } });
+    // Optionally, you can delete from the assosiated product.cogs field
+    await Product.updateMany(
+      { cogs: { $in: cogsToDelete.map(cog => cog._id) } },
+      { $pull: { cogs: { $in: cogsToDelete.map(cog => cog._id) } } }
+    );
+
+
+    res.status(200).send(`${cogsToDelete.length} COGs deleted successfully`);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Server error");
+  }
+});
+
+
+// delete specific like before 1 day, before 2 months, before 3 years - configurable
+
+/**
+ * @swagger
+ * /api/metadata/delete-cogs:
+ *   delete:
+ *     summary: Delete COGs older than a specified time period
+ *     tags: [Metadata]
+ *     parameters:
+ *       - in: query
+ *         name: days
+ *         schema:
+ *           type: integer
+ *         description: Number of days to delete COGs older than
+ *       - in: query
+ *         name: months
+ *         schema:
+ *           type: integer
+ *         description: Number of months to delete COGs older than
+ *       - in: query
+ *         name: years
+ *         schema:
+ *           type: integer
+ *         description: Number of years to delete COGs older than
+ *     responses:
+ *       200:
+ *         description: COGs deleted successfully
+ *       400:
+ *         description: Invalid time period or format
+ *       404:
+ *         description: No COGs found to delete
+ *       500:
+ *         description: Server error
+ */
+
+metadataRouter.delete('/delete-cogs', async (req, res) => {
+  const { days, months, years } = req.query;
+
+  try {
+    const now = new Date();
+    let cutoffDate: Date;
+
+    if (days) {
+      cutoffDate = new Date(now.getTime() - parseInt(days as string) * 24 * 60 * 60 * 1000);
+    } else if (months) {
+      cutoffDate = new Date(now.getFullYear(), now.getMonth() - parseInt(months as string), now.getDate());
+    } else if (years) {
+      cutoffDate = new Date(now.getFullYear() - parseInt(years as string), now.getMonth(), now.getDate());
+    } else {
+      return res.status(400).send("Please provide a valid time period (days, months, or years)");
+    }
+
+    const cutoffTimestamp = cutoffDate.getTime();
+
+    // Find all COGs before the cutoff date
+    const cogsToDelete = await CogModel.find({ aquisition_datetime: { $lt: cutoffTimestamp } });
+    if (cogsToDelete.length === 0) {
+      return res.status(404).send("No COGs found before the specified date");
+    }
+
+    // Delete the COGs
+    await CogModel.deleteMany({ aquisition_datetime: { $lt: cutoffTimestamp } });
+
+    // Optionally, you can delete from the associated product.cogs field
+    await Product.updateMany(
+      { cogs: { $in: cogsToDelete.map(cog => cog._id) } },
+      { $pull: { cogs: { $in: cogsToDelete.map(cog => cog._id) } } }
+    );
+
+    res.status(200).send(`${cogsToDelete.length} COGs deleted successfully`);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Server error");
+  }
+});
+
+
+
 export default metadataRouter;
