@@ -268,6 +268,20 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
     // check if product is already added to cog
 
 
+    let newBands = bands;
+    // Check if the request has bands and clean up the band descriptions
+    if (req.body.bands && Array.isArray(req.body.bands)) {
+      newBands = req.body.bands.map((band: any) => {
+        if (band.description && band.description.startsWith('IMG_')) {
+          return {
+            ...band,
+            description: band.description.replace(/^IMG_/, '')
+          };
+        }
+        return band;
+      });
+    }
+
 
 
 
@@ -283,7 +297,7 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
       coordinateSystem,
       size,
       cornerCoords,
-      bands,
+      bands: newBands,
       processingLevel,
       version,
       type,
