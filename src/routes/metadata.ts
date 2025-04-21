@@ -724,9 +724,8 @@ metadataRouter.get("/:satId/cog/range", async (req: Request, res: Response) => {
       filter.productCode = productCode;
     }
 
-    if (type) {
-      filter.type = type;
-    }
+    // We'll handle type filtering after retrieving the COGs since
+    // we need to inspect band descriptions which can't be done in the MongoDB query
 
     let cogs;
 
@@ -753,7 +752,64 @@ metadataRouter.get("/:satId/cog/range", async (req: Request, res: Response) => {
     }
 
     cogs = await CogModel.find(filter);
-    res.status(200).json(cogs);
+
+    // Filter by type if provided (needs to check both type field and band descriptions)
+    if (type) {
+      // First pass: Get native type matches (non-MULTI)
+      const nativeTypeCogs = cogs.filter(cog =>
+        cog.type && cog.type !== "MULTI" && cog.type === type
+      );
+
+      // If we have native matches, return those
+      if (nativeTypeCogs.length > 0) {
+        cogs = nativeTypeCogs;
+      } else {
+        // Otherwise, look for matches in band descriptions
+        const multiTypeCogsWithRequestedBand = cogs.filter(cog => {
+          // Check band descriptions
+          if (cog.bands && Array.isArray(cog.bands)) {
+            return cog.bands.some(band => {
+              if (band.description) {
+                // Remove "IMG_" prefix if it exists
+                const cleanBandName = band.description.replace(/^IMG_/, '');
+                return cleanBandName === type;
+              }
+              return false;
+            });
+          }
+          return false;
+        });
+
+        // Filter the bands in MULTI COGs to only include the requested band
+        cogs = multiTypeCogsWithRequestedBand.map(cog => {
+          // Create a shallow copy of the COG to avoid modifying the original
+          const filteredCog = { ...cog.toObject() };
+
+          // If it's a MULTI type COG, filter its bands
+          if (filteredCog.type === "MULTI" && filteredCog.bands && Array.isArray(filteredCog.bands)) {
+            const filteredBands: any = filteredCog.bands.filter(band => {
+              if (band.description) {
+                const cleanBandName = band.description.replace(/^IMG_/, '');
+                return cleanBandName === type;
+              }
+              return false;
+            });
+
+            // Ensure we have at least one band to satisfy the type constraint
+            if (filteredBands.length > 0) {
+              filteredCog.bands = filteredBands;
+            }
+          }
+
+          return filteredCog;
+        });
+      }
+    }
+
+    res.status(200).json({
+      message: "Retrieved Data Successfully",
+      cogs: cogs
+    });
   } catch (error) {
     console.error(error);
     res.status(500).send("Something is wrong");
@@ -787,6 +843,12 @@ metadataRouter.get("/:satId/cog/range", async (req: Request, res: Response) => {
  *         required: false
  *         description: Number of COGs to return
  *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: Filter by COG type or band description
+ *       - in: query
  *         name: showHidden
  *         schema:
  *           type: boolean
@@ -808,7 +870,7 @@ metadataRouter.get("/:satId/cog/range", async (req: Request, res: Response) => {
  */
 metadataRouter.get("/:satId/cog/last", async (req: Request, res: Response) => {
   try {
-    const { timestamp, count } = req.query;
+    const { timestamp, count, type } = req.query;
     const showHidden = req.query.showHidden === 'true';
 
     const limit = count ? parseInt(count as string, 10) : DEFAULT_FRAME_COUNT;
@@ -841,10 +903,109 @@ metadataRouter.get("/:satId/cog/last", async (req: Request, res: Response) => {
       query.product = { $in: visibleProductIds };
     }
 
-    const cogs = await CogModel.find(query)
-      .sort({ aquisition_datetime: -1 })
-      .limit(limit);
-    res.status(200).json(cogs);
+    // Get all matching cogs sorted by acquisition time
+    let cogs = await CogModel.find(query)
+      .sort({ aquisition_datetime: -1 });
+
+    // Filter by type if provided (needs to check both type field and band descriptions)
+    if (type) {
+      // First, create a map to prioritize native types over multi types
+      const bandMap = new Map<string, any>();
+
+      // First pass: collect all cogs with native types (non-MULTI)
+      cogs.forEach(cog => {
+        if (cog.type && cog.type !== "MULTI" && cog.type === type) {
+          if (!bandMap.has(type as string)) {
+            bandMap.set(type as string, cog);
+          }
+        }
+      });
+
+      // If no native type found, check band descriptions in MULTI type cogs
+      if (!bandMap.has(type as string)) {
+        cogs.forEach(cog => {
+          if (cog.type === "MULTI" && cog.bands && Array.isArray(cog.bands)) {
+            // Check if this cog has the requested band
+            const hasBand = cog.bands.some(band => {
+              if (band.description) {
+                // Remove "IMG_" prefix if it exists
+                const cleanBandName = band.description.replace(/^IMG_/, '');
+                return cleanBandName === type;
+              }
+              return false;
+            });
+
+            if (hasBand && !bandMap.has(type as string)) {
+              // Create a shallow copy of the COG to avoid modifying the original
+              const filteredCog: any = { ...cog.toObject() };
+
+              // Filter its bands to only include the requested band
+              if (filteredCog.bands && Array.isArray(filteredCog.bands)) {
+                filteredCog.bands = filteredCog.bands.filter((band: any) => {
+                  if (band.description) {
+                    const cleanBandName = band.description.replace(/^IMG_/, '');
+                    return cleanBandName === type;
+                  }
+                  return false;
+                });
+              }
+
+              bandMap.set(type as string, filteredCog);
+            }
+          }
+        });
+      }
+
+      // Convert back to array (will have at most one cog)
+      cogs = Array.from(bandMap.values());
+    } else {
+      // If no specific type filter, remove duplicates based on band descriptors
+      // For each unique band type, keep the most recent cog
+      const bandMap = new Map<string, any>();
+
+      // First pass: collect all native type cogs (non-MULTI)
+      cogs.forEach(cog => {
+        if (cog.type && cog.type !== "MULTI") {
+          if (!bandMap.has(cog.type)) {
+            bandMap.set(cog.type, cog);
+          }
+        }
+      });
+
+      // Second pass: collect band descriptions from all cogs
+      // Only add if not already covered by a native type
+      cogs.forEach(cog => {
+        if (cog.type === "MULTI" && cog.bands && Array.isArray(cog.bands)) {
+          cog.bands.forEach(band => {
+            if (band.description) {
+              // Remove "IMG_" prefix if it exists
+              const cleanBandName = band.description.replace(/^IMG_/, '');
+              // Only add if we don't already have this band from a native type
+              if (!bandMap.has(cleanBandName)) {
+                // Create a shallow copy of the COG to avoid modifying the original
+                const filteredCog = { ...cog.toObject() };
+
+                // Filter its bands to only include this band
+                filteredCog.bands = [band];
+
+                bandMap.set(cleanBandName, filteredCog);
+              }
+            }
+          });
+        }
+      });
+
+      // Convert back to array and limit results
+      cogs = Array.from(bandMap.values());
+    }
+
+    // Apply the limit after deduplication
+    const limitedCogs = cogs.slice(0, limit);
+
+    res.status(200).json({
+      message: "Retrieved Data Successfully",
+      cogs: limitedCogs
+    });
   } catch (error) {
     console.error(error);
     res.status(500).send("Something is wrong");
