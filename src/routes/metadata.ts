@@ -282,6 +282,13 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
       });
     }
 
+    // remove IMG_ prefix from productCode
+
+    let cleanProductCode = product_code;
+    if (product_code && product_code.startsWith('IMG_')) {
+      cleanProductCode = product_code.replace(/^IMG_/, '');
+    }
+
 
 
 
@@ -303,7 +310,7 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
       type,
       revision,
       aquisition_datetime: timestamp,
-      productCode: product_code,
+      productCode: cleanProductCode,
       product: product ? product._id : null,
     });
 
@@ -325,7 +332,7 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
 
       await Product.findOneAndUpdate(
         {
-          productId: product_code,
+          productId: cleanProductCode,
           satelliteId: satellite,
           processingLevel,
         },
