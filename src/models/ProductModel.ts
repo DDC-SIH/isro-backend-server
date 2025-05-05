@@ -6,6 +6,7 @@ export interface ProductType extends Document {
   satelliteId: string;
   processingLevel: string;
   isVisible?: boolean;
+  productDisplayName?: string;
 }
 
 const ProductSchema: Schema<ProductType> = new Schema(
@@ -19,6 +20,7 @@ const ProductSchema: Schema<ProductType> = new Schema(
       default: [],
     },
     isVisible: { type: Boolean, default: true },
+    productDisplayName: { type: String, required: false },
   },
   { timestamps: true }
 );

@@ -178,6 +178,7 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
       type,
       bands,
       product_code,
+      productDisplayName
     } = req.body;
     try {
       const data: any = {};
@@ -220,6 +221,12 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
       satelliteId: satellite,
       processingLevel,
     });
+    if (product && !product.productDisplayName) {
+      product.productDisplayName = productDisplayName;
+      await product.save();
+      console.log("Product updated with display name");
+    }
+
     if (!product) {
       product = new Product({
         product_code,
@@ -227,6 +234,7 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
         processingLevel,
         isVisible: true,
         productId: product_code,
+        productDisplayName,
         cogs: [],
       });
       await product.save();
