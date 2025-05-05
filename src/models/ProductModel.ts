@@ -5,6 +5,7 @@ export interface ProductType extends Document {
   cogs: [Types.ObjectId];
   satelliteId: string;
   processingLevel: string;
+  processingLevelDisplayName: string;
   isVisible?: boolean;
   productDisplayName?: string;
 }
@@ -14,6 +15,7 @@ const ProductSchema: Schema<ProductType> = new Schema(
     productId: { type: String, required: true },
     satelliteId: { type: String, required: true },
     processingLevel: { type: String, required: true },
+    processingLevelDisplayName: { type: String, required: false },
     cogs: {
       type: [Schema.Types.ObjectId],
       ref: "COG",

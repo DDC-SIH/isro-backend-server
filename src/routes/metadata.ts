@@ -178,7 +178,8 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
       type,
       bands,
       product_code,
-      productDisplayName
+      productDisplayName,
+      processingLevelDisplayName
     } = req.body;
     try {
       const data: any = {};
@@ -226,6 +227,11 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
       await product.save();
       console.log("Product updated with display name");
     }
+    if (product && !product.processingLevelDisplayName) {
+      product.processingLevelDisplayName = processingLevelDisplayName;
+      await product.save();
+      console.log("Product updated with processing level display name");
+    }
 
     if (!product) {
       product = new Product({
@@ -235,6 +241,7 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
         isVisible: true,
         productId: product_code,
         productDisplayName,
+        processingLevelDisplayName,
         cogs: [],
       });
       await product.save();
@@ -320,6 +327,8 @@ metadataRouter.post("/save", async (req: Request, res: Response) => {
       aquisition_datetime: timestamp,
       productCode: cleanProductCode,
       product: product ? product._id : null,
+      productDisplayName,
+      processingLevelDisplayName,
     });
 
     await SatelliteModel.findOneAndUpdate(

@@ -21,7 +21,8 @@ export interface CogType extends Document {
   satelliteId: string;
   type: string;
   productCode:string;
-
+  productDisplayName?: string;
+  processingLevelDisplayName?: string;
 }
 
 const CogSchema: Schema<CogType> = new Schema(
@@ -49,6 +50,8 @@ const CogSchema: Schema<CogType> = new Schema(
     coordinateSystem: { type: Schema.Types.Mixed, required: false },
     type: { type: String, required: true },
     productCode: { type: String, required: true },
+    productDisplayName: { type: String, required: false },
+    processingLevelDisplayName: { type: String, required: false },
   },
   { timestamps: true }
 );
