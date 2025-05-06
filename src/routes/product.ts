@@ -50,7 +50,7 @@ const productRouter = express.Router();
  * @swagger
  * /api/product/{satId}/processing-levels:
  *   get:
- *     summary: Get all available processing levels for a satellite
+ *     summary: Get all available processing levels for a satellite, grouped by display name
  *     tags: [Products]
  *     parameters:
  *       - in: path
@@ -67,16 +67,21 @@ const productRouter = express.Router();
  *         description: Whether to include hidden products (default is false)
  *     responses:
  *       200:
- *         description: List of available processing levels
+ *         description: List of available processing levels grouped by display name
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
  *                 processingLevels:
- *                   type: array
- *                   items:
- *                     type: string
+ *                   type: object
+ *                   additionalProperties:
+ *                     type: array
+ *                     items:
+ *                       type: string
+ *                   example:
+ *                     Standard Products: ["L1B", "L1C"]
+ *                     Geo-Physical Products: ["L2B", "L2C"]
  *       500:
  *         description: Server error
  */
@@ -85,27 +90,36 @@ productRouter.get("/:satId/processing-levels", async (req: Request, res: Respons
         const satId = req.params.satId;
         const showHidden = req.query.showHidden === 'true';
 
-        // Find all products for this satellite
         const query: any = { satelliteId: satId };
-
-        // Filter by visibility unless showHidden is true
         if (!showHidden) {
             query.isVisible = true;
         }
 
         const products = await Product.find(query);
 
-        // Extract unique processing levels
-        const processingLevels = [...new Set(products.map(product => product.processingLevel))];
+        // Group processing levels by display name
+        const grouped: Record<string, string[]> = {};
+
+        for (const product of products) {
+            const key = product.processingLevel;
+            const value = product.processingLevelDisplayName;
+            if (!grouped[value]) {
+                grouped[value] = [];
+            }
+            if (!grouped[value].includes(key)) {
+                grouped[value].push(key);
+            }
+        }
 
         res.status(200).json({
-            processingLevels
+            processingLevels: grouped
         });
     } catch (error) {
         console.error(error);
         res.status(500).send("Something went wrong");
     }
 });
+
 
 /**
  * @swagger
@@ -134,7 +148,7 @@ productRouter.get("/:satId/processing-levels", async (req: Request, res: Respons
  *         description: Whether to include hidden products (default is false)
  *     responses:
  *       200:
- *         description: List of product codes
+ *         description: List of product codes with display names
  *         content:
  *           application/json:
  *             schema:
@@ -143,7 +157,19 @@ productRouter.get("/:satId/processing-levels", async (req: Request, res: Respons
  *                 productCodes:
  *                   type: array
  *                   items:
- *                     type: string
+ *                     type: object
+ *                     properties:
+ *                       key:
+ *                         type: string
+ *                         description: Product code
+ *                       value:
+ *                         type: string
+ *                         description: Display name of the product
+ *                   example:
+ *                     - key: "ALOS_AVNIR"
+ *                       value: "AVNIR Image"
+ *                     - key: "AWiFS_1D"
+ *                       value: "AWiFS Daily"
  *       500:
  *         description: Server error
  */
@@ -177,8 +203,15 @@ productRouter.get("/:satId/:processingLevel/product-codes", async (req: Request,
         });
 
         // Extract unique product codes
-        const productCodes = [...new Set(cogs.map(cog => cog.productCode))];
-
+        const productCodes = [
+            ...new Set(
+              cogs.map(cog => `${cog.productCode}:${cog.productDisplayName}`)
+            )
+          ].map(item => {
+            const [key, value] = item.split(":");
+            return { key, value };
+          });
+          
         res.status(200).json({
             productCodes
         });

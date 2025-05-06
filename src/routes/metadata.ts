@@ -1917,7 +1917,9 @@ metadataRouter.get(
                   _id: cog._id,
                   satellite: cog.satellite,
                   satelliteId: cog.satelliteId,
-                  processingLevel: cog.processingLevel
+                  processingLevel: cog.processingLevel,
+                  processingLevelDisplayName: cog.processingLevelDisplayName,
+                  productDisplayName:cog.productDisplayName
                 });
               }
             }
@@ -1948,7 +1950,9 @@ metadataRouter.get(
             _id: cog._id,
             satellite: cog.satellite,
             satelliteId: cog.satelliteId,
-            processingLevel: cog.processingLevel
+            processingLevel: cog.processingLevel,
+            processingLevelDisplayName: cog.processingLevelDisplayName,
+            productDisplayName:cog.productDisplayName
           });
         }
       });
@@ -2147,7 +2151,9 @@ metadataRouter.get(
                   _id: cog._id,
                   satellite: cog.satellite,
                   satelliteId: cog.satelliteId,
-                  processingLevel: cog.processingLevel
+                  processingLevel: cog.processingLevel,
+                  processingLevelDisplayName: cog.processingLevelDisplayName,
+                  productDisplayName:cog.productDisplayName
                 });
               }
             }
@@ -2178,7 +2184,9 @@ metadataRouter.get(
             _id: cog._id,
             satellite: cog.satellite,
             satelliteId: cog.satelliteId,
-            processingLevel: cog.processingLevel
+            processingLevel: cog.processingLevel,
+            processingLevelDisplayName: cog.processingLevelDisplayName,
+            productDisplayName:cog.productDisplayName
           });
         }
       });
